@@ -1,7 +1,7 @@
-let x,y,t;
-// {x = 0 && y = 1}
+let x,y,r;
+// x = X && y = Y
 function main() {
-    t = y;
-    y = x;
-    x = t;
-} // {x = y && y = x}
+    if (y > x) r = y;
+    else r = x;
+
+} // r = m(X,Y)
