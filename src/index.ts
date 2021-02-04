@@ -18,6 +18,7 @@ function getPrecondition(node: ts.Node, postcondition: string, depth: number = 0
     console.log('--'.repeat(depth), {node: node && node.getText(src), postcondition});
     if (!node) return undefined;
 
+    // block statement
     if (ts.isBlock(node)) {
         if (node.statements.length > 0) {
             // iterate through all the statements in the block and get their precondition successively
@@ -42,6 +43,7 @@ function getPrecondition(node: ts.Node, postcondition: string, depth: number = 0
 
     // Assignment statement
     if (ts.isExpressionStatement(node) && ts.isBinaryExpression(node.expression) && node.expression.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(node.expression.left) && ts.isIdentifier(node.expression.right)) {
+        // replaces all occurences of left side of assignment with right side of assignment in postcondition
         const assignmentPrecondition = postcondition.split(`${node.expression.left.escapedText}`).join(`${node.expression.right.escapedText}`);
         console.log('--'.repeat(depth), assignmentPrecondition);
         return [
@@ -70,6 +72,7 @@ function getPrecondition(node: ts.Node, postcondition: string, depth: number = 0
         ];
     }
 
+    // While statement
     if (ts.isWhileStatement(node) && ts.isBinaryExpression(node.expression)) {
         return [
             getConditionFromNode(node),
