@@ -1,36 +1,64 @@
+@{%
+const moo = require('moo');
+const lexer = moo.compile({
+    rel_op: /<|<=|>|>=|==|!=/,
+    ws: /[ \t]/,
+    integer: /\d+/,
+    id: /[a-z]+/,
+    or_word: /OR/,
+    and_word: /AND/,
+    not_word: /NOT/,
+    left_para: /\(/,
+    right_para: /\)/,
+    plus_sym: /\+/,
+    minus_sym: /\-/,
+    mul_sym: /\*/,
+    div_sym: /\//,
+    list_sep: /,/
+});
+%}
+
+@lexer lexer
+
 b_exp
-    -> or_exp {% d => ({type: 'root', exp: d[0]})%}
+    -> _ or_exp _{% d => ({type: 'root', exp: d[1]})%}
+# OR expression
 or_exp
-    -> or_exp " OR " and_exp
+    -> or_exp (__ %or_word __) and_exp
     {%
         d => ({
-            type: 'bin_op',
+            type: 'bool_bin_op',
             op:'OR',
             left: d[0],
             right: d[2],
         }) 
     %}
     |  and_exp {% id %}
+# AND expression
 and_exp
-    -> and_exp " AND " not_exp 
+    -> and_exp (__ %and_word __) not_exp 
     {%
         d => ({
-            type: 'bin_op',
+            type: 'bool_bin_op',
             op: 'AND',
             left: d[0],
             right: d[2],
         }) 
     %}
     |  not_exp {% id %}
+# NOT expression
 not_exp 
-    -> "NOT(" bool_term ")" {% d => ({type: 'bool_un_op', op: 'NOT', operand: d[1]})%}
+    -> (%not_word _ "(" _) bool_term (_ ")") {% d => ({type: 'bool_un_op', op: 'NOT', operand: d[1]})%}
     |  bool_term {% id %}
-    |  "(" or_exp ")" {% d => d[1] %}
+    |  "(" (_ or_exp _) ")" {% d => d[1][1] %}
+# A term that returns true or false
 bool_term
     -> rel_exp {% id %}
+# Relational expression that compares two math expressions
 rel_exp 
-    -> math_exp rel_op math_exp {% d => ({type: 'rel_op', op: d[1], left: d[0], right: d[2]})%}
-    | id {% id %}
+    -> math_exp (_ %rel_op _) math_exp {% d => ({type: 'rel_exp', op: d[1][1], left: d[0], right: d[2]})%}
+    | %id {% id %}
+# Math exprssion
 math_exp -> sum_term {% id %}
 sum_term 
     -> sum_term [\+\-] mul_term {% d => ({type: 'math_op', op: d[1], left: d[0], right: d[2]})%}
@@ -41,12 +69,11 @@ mul_term
     | function_call {% id %}
     |  "(" sum_term ")" {% d => d[1]%}
     |  term {% id %}
-function_call -> id "(" arg_list ")" {% d => ({type: 'function_call', name: d[0], arg_list: d[2]})%}
+function_call -> %id "(" (_ arg_list _) ")" {% d => ({type: 'function_call', name: d[0], arg_list: d[2][1]})%}
 arg_list 
-    -> arg_list "," sum_term {% d => ({type: 'arg_list', args: [...d[0], d[2]]})%}
+    -> arg_list (_ "," _) sum_term {% d => ({type: 'arg_list', args: [...d[0], d[2]]})%}
     |  sum_term # should return a single element array
+term -> (%id | %integer) {% d => d[0][0] %}
 
-term -> (id | integer) {% d => d[0][0] %}
-rel_op  -> (">" | ">=" | "<" | "<=" | "==" | "!=") {% d => ({type: 'terminal_rel_op', value: d[0][0]}) %}
-id      -> ([a-z]:+) {% d => ({type: 'terminal_id', value: d[0][0].join('')}) %}
-integer -> ([0-9]:+) {% d => ({type: 'terminal_integer', value: d[0][0].join('')}) %}
+_ -> %ws:* # optional whitespace
+__ -> %ws:+ # mandatory whitespace
