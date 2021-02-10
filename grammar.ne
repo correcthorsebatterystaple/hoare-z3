@@ -1,7 +1,7 @@
 @{%
 const moo = require('moo');
 const lexer = moo.compile({
-    rel_op: /<|<=|>|>=|==|!=/,
+    rel_op: /<|<=|>|>=|=|!=/,
     ws: /[ \t]/,
     integer: /\d+/,
     id: /[a-z]+/,
@@ -21,14 +21,14 @@ const lexer = moo.compile({
 @lexer lexer
 
 b_exp
-    -> _ or_exp _{% d => ({type: 'root', exp: d[1]})%}
+    -> _ or_exp _{% d => ({type: 'root', value: d[1]})%}
 # OR expression
 or_exp
     -> or_exp (__ %or_word __) and_exp
     {%
         d => ({
             type: 'bool_bin_op',
-            op:'OR',
+            value:'or',
             left: d[0],
             right: d[2],
         }) 
@@ -40,7 +40,7 @@ and_exp
     {%
         d => ({
             type: 'bool_bin_op',
-            op: 'AND',
+            value: 'and',
             left: d[0],
             right: d[2],
         }) 
@@ -48,7 +48,7 @@ and_exp
     |  not_exp {% id %}
 # NOT expression
 not_exp 
-    -> (%not_word _ "(" _) bool_term (_ ")") {% d => ({type: 'bool_un_op', op: 'NOT', operand: d[1]})%}
+    -> (%not_word _ "(" _) bool_term (_ ")") {% d => ({type: 'bool_un_op', value: 'not', child: d[1]})%}
     |  bool_term {% id %}
     |  "(" (_ or_exp _) ")" {% d => d[1][1] %}
 # A term that returns true or false
@@ -56,15 +56,15 @@ bool_term
     -> rel_exp {% id %}
 # Relational expression that compares two math expressions
 rel_exp 
-    -> math_exp (_ %rel_op _) math_exp {% d => ({type: 'rel_exp', op: d[1][1], left: d[0], right: d[2]})%}
+    -> math_exp (_ %rel_op _) math_exp {% d => ({type: 'rel_exp', value: d[1][1], left: d[0], right: d[2]})%}
     | %id {% id %}
 # Math exprssion
 math_exp -> sum_term {% id %}
 sum_term 
-    -> sum_term [\+\-] mul_term {% d => ({type: 'math_op', op: d[1], left: d[0], right: d[2]})%}
+    -> sum_term [\+\-] mul_term {% d => ({type: 'math_op', value: d[1], left: d[0], right: d[2]})%}
     |  mul_term {% id %}
 mul_term 
-    -> mul_term [\*\/] term {% d => ({type: 'math_op', op: d[1], left: d[0], right: d[2]})%}
+    -> mul_term [\*\/] term {% d => ({type: 'math_op', value: d[1], left: d[0], right: d[2]})%}
     |  mul_term [\*\/] function_call 
     | function_call {% id %}
     |  "(" sum_term ")" {% d => d[1]%}
