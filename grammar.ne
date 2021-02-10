@@ -48,7 +48,7 @@ and_exp
     |  not_exp {% id %}
 # NOT expression
 not_exp 
-    -> (%not_word _ "(" _) bool_term (_ ")") {% d => ({type: 'bool_un_op', value: 'not', child: d[1]})%}
+    -> (%not_word _ "(" _) or_exp (_ ")") {% d => ({type: 'bool_un_op', value: 'not', child: d[1]})%}
     |  bool_term {% id %}
     |  "(" (_ or_exp _) ")" {% d => d[1][1] %}
 # A term that returns true or false
