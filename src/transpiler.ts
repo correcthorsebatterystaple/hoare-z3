@@ -1,5 +1,5 @@
 import * as nearley from 'nearley';
-import grammar from './grammar';
+import * as grammar from './grammar';
 
 const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
 const terminalTypes = ['id', 'integer', 'rel_op'];
@@ -16,13 +16,10 @@ function visit(node) {
         return node.value;
     }
 
-    // unary operator with child of terminal type
+    // unary operator
     if (unaryOpTypes.includes(node.type)) {
-        if (terminalTypes.includes(node.child.type)) {
-            return `(${node.value} ${node.child.value})`;
-        } else {
-            return `(${node.value} (${visit(node.child)})`;
-        }
+        // has child of terminal type
+        return `(${node.value} ${visit(node.child)})`;
     }
 
     // binary operator with both children of terminal type
