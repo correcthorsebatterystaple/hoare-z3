@@ -1,3 +1,6 @@
+import * as grammar from './grammar';
+import * as nearley from 'nearley';
+
 const terminalTypes = ['id', 'integer', 'rel_op'];
 const binaryOpTypes = ['bool_bin_op', 'rel_exp', 'math_op'];
 const unaryOpTypes = ['bool_un_op'];
@@ -10,11 +13,17 @@ interface Node {
   right?: Node;
 }
 
-export function infixToPrefix(node: Node) {
+export function infixToPrefix(node: Node | string): string {
   if (!node) return;
 
+  if (typeof node === 'string') {
+    const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
+    parser.feed(node);
+    return infixToPrefix(parser.results[0]);
+  }
+
   if (node.type === 'root') {
-    return node.value;
+    return infixToPrefix(node.value);
   }
 
   if (terminalTypes.includes(node.type)) {

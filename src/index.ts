@@ -1,11 +1,17 @@
 import * as ts from 'typescript';
-import * as utils from 'tsutils';
 import * as fs from 'fs';
+import { assignmentTransform, conditionalTransform } from './hoareTransformers';
+import { infixToPrefix } from './infixToPrefix';
 
-const verifications = [];
+const args = require('minimist')(process.argv.slice(2));
+const debug = args.debug || false;
+const fileName = args._[0];
+const toPrefix = args.prefix || false;
 
-const fileName = process.argv[2];
-console.log('source file : ' + fileName);
+if (debug) {
+  console.log('source file : ' + fileName);
+}
+
 const src = ts.createSourceFile(fileName, fs.readFileSync(fileName, 'utf-8'), ts.ScriptTarget.Latest);
 const main = src.statements.filter((x) => ts.isFunctionDeclaration(x))[0] as ts.FunctionDeclaration;
 
@@ -22,7 +28,9 @@ function getPrecondition(
   postcondition: string,
   depth: number = 0
 ): [precondition: string, text: string] {
-  console.log('--'.repeat(depth), { node: node && node.getText(src), postcondition });
+  if (debug) {
+    console.log('--'.repeat(depth), { node: node && node.getText(src), postcondition });
+  }
   if (!node) return undefined;
 
   // block statement
@@ -45,14 +53,19 @@ function getPrecondition(
     ts.isExpressionStatement(node) &&
     ts.isBinaryExpression(node.expression) &&
     node.expression.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
-    ts.isIdentifier(node.expression.left) &&
-    ts.isIdentifier(node.expression.right)
+    ts.isIdentifier(node.expression.left)
   ) {
     // replaces all occurences of left side of assignment with right side of assignment in postcondition
-    const assignmentPrecondition = postcondition
-      .split(`${node.expression.left.escapedText}`)
-      .join(`${node.expression.right.escapedText}`);
-    console.log('--'.repeat(depth), assignmentPrecondition);
+    const assignmentPrecondition = assignmentTransform(
+      postcondition,
+      node.expression.left.text,
+      node.expression.right.getText(src)
+    );
+
+    if (debug) {
+      console.log('--'.repeat(depth), assignmentPrecondition);
+    }
+
     return [assignmentPrecondition, node.getText(src)];
   }
 
@@ -61,16 +74,14 @@ function getPrecondition(
     let [thenPrecondition] = getPrecondition(node.thenStatement, postcondition, depth + 2);
     let [elsePrecondition] = getPrecondition(node.elseStatement, postcondition, depth + 2) || [];
 
-    const thenCondition = `(${thenPrecondition}) && ${node.expression.getText(src)}`;
-    console.log('--'.repeat(depth), thenCondition);
+    const expressionText = node.expression.getText(src);
+    const conditionalPrecondition = conditionalTransform(expressionText, thenPrecondition, elsePrecondition);
 
-    const elseCondition = `(${elsePrecondition || 'true'}) && ~(${node.expression.getText(src)})`;
-    console.log('--'.repeat(depth), elseCondition);
+    if (debug) {
+      console.log('--'.repeat(depth), conditionalPrecondition);
+    }
 
-    const condition = `(${thenCondition}) || (${elseCondition || 'false'})`;
-    console.log('--'.repeat(depth), { condition });
-
-    return [condition, node.getText(src)];
+    return [conditionalPrecondition, node.getText(src)];
   }
 
   // While statement
@@ -102,4 +113,14 @@ for (let i = main.body.statements.length - 1; i >= 0; i--) {
   currentCondition = annotatedStatement[0];
 }
 
-console.log(results);
+if (toPrefix) {
+  console.log({
+    precondition: infixToPrefix(rootPrecondition),
+    weakestPrecondition: infixToPrefix(results[0][0]),
+  });
+} else {
+  console.log({
+    precondition: rootPrecondition,
+    weakestPrecondition: results[0][0],
+  });
+}

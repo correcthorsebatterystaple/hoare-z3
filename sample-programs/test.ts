@@ -1,6 +1,7 @@
 let x,y,r;
-//? x = X && y = Y
+//? x = 20 AND y = 10
 function main() {
-    //? test condition
-    while (x < y) {}
-} //? r = m(X,Y)
+    if (y>x) {
+        x=y;
+    }
+} //? x=20

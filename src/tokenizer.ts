@@ -9,10 +9,12 @@ export function tokenize(str: string): LexerToken[] {
   let token: LexerToken;
 
   while ((token = grammar.Lexer.next() as LexerToken)) {
-    if (token.type !== 'ws') {
-      tokens.push(token);
-    }
+    tokens.push(token);
   }
 
   return tokens;
+}
+
+export function mergeTokens(tokens: LexerToken[]): string {
+  return tokens.join('');
 }
