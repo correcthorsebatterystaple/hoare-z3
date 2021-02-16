@@ -1,12 +1,13 @@
 import * as grammar from './grammar';
 import * as nearley from 'nearley';
+import { ParserNodeType } from './enums/ParserNodeType';
 
-const terminalTypes = ['id', 'integer', 'rel_op'];
-const binaryOpTypes = ['bool_bin_op', 'rel_exp', 'math_op'];
-const unaryOpTypes = ['bool_un_op'];
+const terminalTypes = [ParserNodeType.Id, ParserNodeType.Integer, ParserNodeType.RelOp];
+const binaryOpTypes = [ParserNodeType.BoolBinaryOp, ParserNodeType.MathOp, ParserNodeType.RelExp];
+const unaryOpTypes = [ParserNodeType.BoolUnaryOp];
 
 interface Node {
-  type: string;
+  type: ParserNodeType;
   value: string;
   child?: Node;
   left?: Node;
@@ -22,7 +23,7 @@ export function infixToPrefix(node: Node | string): string {
     return infixToPrefix(parser.results[0]);
   }
 
-  if (node.type === 'root') {
+  if (node.type === ParserNodeType.Root) {
     return infixToPrefix(node.value);
   }
 
