@@ -23,17 +23,18 @@ export function infixToPrefix(node: Node | string): string {
     return infixToPrefix(parser.results[0]);
   }
 
+  // root type
   if (node.type === ParserNodeType.Root) {
     return infixToPrefix(node.value);
   }
 
+  // terminal type
   if (terminalTypes.includes(node.type)) {
     return node.value;
   }
 
   // unary operator
   if (unaryOpTypes.includes(node.type)) {
-    // has child of terminal type
     return `(${node.value} ${infixToPrefix(node.child)})`;
   }
 
