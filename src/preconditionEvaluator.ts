@@ -1,7 +1,42 @@
+import { readFileSync } from 'fs';
 import ts = require('typescript');
 import { assignmentTransform, conditionalTransform } from './hoareTransformers';
+import { infixToPrefix } from './infixToPrefix';
 
-export function getPrecondition(
+export function getWeakestPreconditionFromFile(
+  fileName: string,
+  opts: { debug?: boolean; toPrefix?: boolean } = {}
+): { precondition: string; weakestPrecondition: string } {
+  const debug = opts.debug || false;
+  const toPrefix = opts.toPrefix || false;
+
+  const src = ts.createSourceFile(fileName, readFileSync(fileName, 'utf-8'), ts.ScriptTarget.Latest);
+  const main = src.statements.filter((x) => ts.isFunctionDeclaration(x))[0] as ts.FunctionDeclaration;
+
+  const rootPrecondition = getConditionFromNode(main, src);
+
+  const [postconditionRange] = ts.getTrailingCommentRanges(src.getFullText(), main.end);
+  const rootPostcondition = src
+    .getFullText()
+    .slice(postconditionRange.pos + 3, postconditionRange.end)
+    .trim();
+
+  const [weakestPrecondition] = getWeakestPrecondition(main.body, rootPostcondition, src, 0, debug);
+
+  if (toPrefix) {
+    return {
+      precondition: infixToPrefix(rootPrecondition),
+      weakestPrecondition: infixToPrefix(weakestPrecondition),
+    };
+  } else {
+    return {
+      precondition: rootPrecondition,
+      weakestPrecondition: weakestPrecondition,
+    };
+  }
+}
+
+export function getWeakestPrecondition(
   node: ts.Node,
   postcondition: string,
   src: ts.SourceFile,
@@ -18,7 +53,7 @@ export function getPrecondition(
     if (node.statements.length > 0) {
       // iterate through all the statements in the block and get their precondition successively
       const precondition = node.statements.reduceRight((post, statement) => {
-        const newPre = getPrecondition(statement, post, src);
+        const newPre = getWeakestPrecondition(statement, post, src);
         return newPre[0];
       }, postcondition);
 
@@ -51,8 +86,8 @@ export function getPrecondition(
 
   // If Statement
   if (ts.isIfStatement(node) && ts.isBinaryExpression(node.expression)) {
-    let [thenPrecondition] = getPrecondition(node.thenStatement, postcondition, src, depth + 2);
-    let [elsePrecondition] = getPrecondition(node.elseStatement, postcondition, src, depth + 2) || [];
+    let [thenPrecondition] = getWeakestPrecondition(node.thenStatement, postcondition, src, depth + 2);
+    let [elsePrecondition] = getWeakestPrecondition(node.elseStatement, postcondition, src, depth + 2) || [];
 
     const expressionText = node.expression.getText(src);
     const conditionalPrecondition = conditionalTransform(expressionText, thenPrecondition, elsePrecondition);
