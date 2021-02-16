@@ -1,6 +1,5 @@
 import * as ts from 'typescript';
 import * as fs from 'fs';
-import { assignmentTransform, conditionalTransform } from './hoareTransformers';
 import { infixToPrefix } from './infixToPrefix';
 import { getConditionFromNode, getPrecondition } from './preconditionEvaluator';
 
@@ -24,24 +23,19 @@ const rootPostcondition = src
   .slice(postconditionRange.pos + 3, postconditionRange.end)
   .trim();
 
-let currentCondition = rootPostcondition;
-let results = [];
-
-for (let i = main.body.statements.length - 1; i >= 0; i--) {
-  const statement = main.body.statements[i];
-  const annotatedStatement = getPrecondition(statement, currentCondition, src);
-  results.unshift(annotatedStatement);
-  currentCondition = annotatedStatement[0];
-}
+const weakestPrecondition = main.body.statements.reduceRight((postcondition, curr) => {
+  const [precondition] = getPrecondition(curr, postcondition, src);
+  return precondition;
+}, rootPostcondition)
 
 if (toPrefix) {
   console.log({
     precondition: infixToPrefix(rootPrecondition),
-    weakestPrecondition: infixToPrefix(results[0][0]),
+    weakestPrecondition: infixToPrefix(weakestPrecondition),
   });
 } else {
   console.log({
     precondition: rootPrecondition,
-    weakestPrecondition: results[0][0],
+    weakestPrecondition: weakestPrecondition,
   });
 }
