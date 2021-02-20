@@ -2,12 +2,12 @@ import { tokenize } from './tokenizer';
 
 export function assignmentTransform(postcondition: string, left: string, right: string): string {
   const tokenizedPostcondition = tokenize(postcondition);
-  return tokenizedPostcondition.map((token) => {
+  return tokenizedPostcondition.reduce((acc, token) => {
     if (token.type === 'id' && token.value === left) {
-      token.text = token.value = '(' + right + ')';
+      return acc.concat('(', right, ')');
     }
-    return token;
-  }).join('');
+    return acc.concat(token.text);
+  }, "");
 }
 
 export function conditionalTransform(
