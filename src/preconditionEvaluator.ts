@@ -3,14 +3,15 @@ import ts = require('typescript');
 import { assignmentTransform, conditionalTransform } from './hoareTransformers';
 import { infixToPrefix } from './infixToPrefix';
 
-export function getWeakestPreconditionFromFile(
+export function getWeakestPrecondition(
   fileName: string,
-  opts: { debug?: boolean; toPrefix?: boolean } = {}
+  opts: { debug?: boolean; toPrefix?: boolean; sourceText?: string } = {}
 ): { precondition: string; weakestPrecondition: string } {
   const debug = opts.debug || false;
   const toPrefix = opts.toPrefix || false;
+  const sourceText = opts.sourceText || readFileSync(fileName, 'utf-8');
 
-  const src = ts.createSourceFile(fileName, readFileSync(fileName, 'utf-8'), ts.ScriptTarget.Latest);
+  const src = ts.createSourceFile(fileName, sourceText, ts.ScriptTarget.Latest);
   const main = src.statements.filter((x) => ts.isFunctionDeclaration(x))[0] as ts.FunctionDeclaration;
 
   const rootPrecondition = getConditionFromNode(main, src);
@@ -21,7 +22,7 @@ export function getWeakestPreconditionFromFile(
     .slice(postconditionRange.pos + 3, postconditionRange.end)
     .trim();
 
-  const [weakestPrecondition] = getWeakestPrecondition(main.body, rootPostcondition, src, 0, debug);
+  const [weakestPrecondition] = getWeakestPreconditionFromNode(main.body, rootPostcondition, src, 0, debug);
 
   if (toPrefix) {
     return {
@@ -36,7 +37,7 @@ export function getWeakestPreconditionFromFile(
   }
 }
 
-export function getWeakestPrecondition(
+export function getWeakestPreconditionFromNode(
   node: ts.Node,
   postcondition: string,
   src: ts.SourceFile,
@@ -53,7 +54,7 @@ export function getWeakestPrecondition(
     if (node.statements.length > 0) {
       // iterate through all the statements in the block and get their precondition successively
       const precondition = node.statements.reduceRight((post, statement) => {
-        const newPre = getWeakestPrecondition(statement, post, src);
+        const newPre = getWeakestPreconditionFromNode(statement, post, src);
         return newPre[0];
       }, postcondition);
 
@@ -86,8 +87,8 @@ export function getWeakestPrecondition(
 
   // If Statement
   if (ts.isIfStatement(node) && ts.isBinaryExpression(node.expression)) {
-    let [thenPrecondition] = getWeakestPrecondition(node.thenStatement, postcondition, src, depth + 2);
-    let [elsePrecondition] = getWeakestPrecondition(node.elseStatement, postcondition, src, depth + 2) || [];
+    let [thenPrecondition] = getWeakestPreconditionFromNode(node.thenStatement, postcondition, src, depth + 2);
+    let [elsePrecondition] = getWeakestPreconditionFromNode(node.elseStatement, postcondition, src, depth + 2) || [];
 
     const expressionText = node.expression.getText(src);
     const conditionalPrecondition = conditionalTransform(expressionText, thenPrecondition, elsePrecondition);
