@@ -1,7 +1,7 @@
 @{%
 const moo = require('moo');
 const lexer = moo.compile({
-    rel_op: /<|<=|>|>=|=|!=/,
+    rel_op: ['>', '>=', '<', '<=', '=', '!='],
     ws: /[ \t]/,
     integer: /\d+/,
     id: /[a-z]+/,
