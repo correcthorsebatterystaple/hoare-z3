@@ -1,11 +1,8 @@
-let z;
-//? {x = x && y = y}
-function max(x: number, y: number) {
+//? x = a AND y = b
+function max(x: number, y: number, z: number) {
     if (x > y) {
         z = x;
-    } else {}
-
-    if (y > x) {
+    } else {
         z = y;
-    } else {}
-} //? {z >= y && z >= x && (z = x || z = y)}
+    }
+} //? z >= a AND z >= b AND (z = a OR z = b)
