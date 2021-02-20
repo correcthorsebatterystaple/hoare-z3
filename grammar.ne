@@ -61,11 +61,11 @@ rel_exp
 # Math exprssion
 math_exp -> sum_term {% id %}
 sum_term 
-    -> sum_term [\+\-] mul_term {% d => ({type: 'math_op', value: d[1], left: d[0], right: d[2]})%}
+    -> sum_term (_ [\+\-] _) mul_term {% d => ({type: 'math_op', value: d[1][1], left: d[0], right: d[2]})%}
     |  mul_term {% id %}
 mul_term 
-    -> mul_term [\*\/] term {% d => ({type: 'math_op', value: d[1], left: d[0], right: d[2]})%}
-    |  mul_term [\*\/] function_call 
+    -> mul_term (_ [\*\/] _) term {% d => ({type: 'math_op', value: d[1][1], left: d[0], right: d[2]})%}
+    |  mul_term (_ [\*\/] _) function_call 
     | function_call {% id %}
     |  "(" sum_term ")" {% d => d[1]%}
     |  term {% id %}
