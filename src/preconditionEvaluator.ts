@@ -13,7 +13,7 @@ export class SourceInformation {
     this.sourceFile = ts.createSourceFile(this.fileName, this.sourceText, ts.ScriptTarget.Latest);
     this.main = this.sourceFile.statements.filter((x) => ts.isFunctionDeclaration(x))[0] as ts.FunctionDeclaration;
 
-    this.mainPrecondition = getPreconditionFromNode(this.main, this.sourceFile);
+    this.mainPrecondition = this.getPreconditionFromNode(this.main);
 
     const [postconditionRange] = ts.getTrailingCommentRanges(this.sourceFile.getFullText(), this.main.end);
     this.mainPostcondition = this.sourceFile
@@ -83,20 +83,22 @@ export class SourceInformation {
 
     // While statement
     if (ts.isWhileStatement(node) && ts.isBinaryExpression(node.expression)) {
-      return getPreconditionFromNode(node, this.sourceFile);
+      return this.getPreconditionFromNode(node);
     }
 
     throw new Error(`Node of type "${ts.SyntaxKind[node.kind]}" not implemented`);
   }
-}
 
-export function getPreconditionFromNode(node: ts.Node, src: ts.SourceFile): string {
-  const srcText = src.getFullText();
-  const [firstCommentRange] = ts.getLeadingCommentRanges(srcText, node.getFullStart());
-  const comment = srcText.slice(firstCommentRange.pos, firstCommentRange.end);
-  if (comment.startsWith('//? ')) {
-    return comment.slice(3).trim();
+  private getPreconditionFromNode(node: ts.Node): string {
+    const srcText = this.sourceFile.getFullText();
+    const [firstCommentRange] = ts.getLeadingCommentRanges(srcText, node.getFullStart());
+
+    const comment = srcText.slice(firstCommentRange.pos, firstCommentRange.end);
+
+    if (comment.startsWith('//? ')) {
+      return comment.slice(3).trim();
+    }
+
+    throw new Error(`"${comment.slice(0, 10)}${comment.length > 10 ? '...' : ''}" does not begin with "//? "`);
   }
-
-  return undefined;
 }
