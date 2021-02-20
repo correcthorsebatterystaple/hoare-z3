@@ -6,7 +6,7 @@ import { infixToPrefix } from './infixToPrefix';
 export function getWeakestPrecondition(
   fileName: string,
   opts: { debug?: boolean; toPrefix?: boolean; sourceText?: string } = {}
-): { precondition: string; weakestPrecondition: string } {
+): string {
   const debug = opts.debug || false;
   const toPrefix = opts.toPrefix || false;
   const sourceText = opts.sourceText || readFileSync(fileName, 'utf-8');
@@ -24,17 +24,7 @@ export function getWeakestPrecondition(
 
   const [weakestPrecondition] = getWeakestPreconditionFromNode(main.body, rootPostcondition, src, 0, debug);
 
-  if (toPrefix) {
-    return {
-      precondition: infixToPrefix(rootPrecondition),
-      weakestPrecondition: infixToPrefix(weakestPrecondition),
-    };
-  } else {
-    return {
-      precondition: rootPrecondition,
-      weakestPrecondition: weakestPrecondition,
-    };
-  }
+  return toPrefix ? infixToPrefix(weakestPrecondition) : weakestPrecondition;
 }
 
 export function getWeakestPreconditionFromNode(
