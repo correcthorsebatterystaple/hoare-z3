@@ -1,13 +1,10 @@
-import { IfStatement } from 'typescript';
-import { LexerToken } from './interfaces/LexerToken';
-import { mergeTokens, tokenize } from './tokenizer';
+import { tokenize } from './tokenizer';
 
 export function assignmentTransform(postcondition: string, left: string, right: string): string {
   const tokenizedPostcondition = tokenize(postcondition);
   return tokenizedPostcondition.map((token) => {
     if (token.type === 'id' && token.value === left) {
-      token.text = right;
-      token.value = right;
+      token.text = token.value = '(' + right + ')';
     }
     return token;
   }).join('');
