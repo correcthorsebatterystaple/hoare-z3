@@ -1,1 +1,4 @@
 node_modules
+*.smt
+*.smt2
+.vscode
