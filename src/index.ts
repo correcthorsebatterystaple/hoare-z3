@@ -1,6 +1,6 @@
 import { fstat, readFileSync, writeFileSync } from 'fs';
 import { infixToPrefix } from './infixToPrefix';
-import { SourceInformation } from './preconditionEvaluator';
+import { SourceInformation } from './SourceInformation';
 import { generateSmtFile } from './smtGenerator';
 
 const args = require('minimist')(process.argv.slice(2));
