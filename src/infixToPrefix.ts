@@ -6,15 +6,15 @@ const terminalTypes = [ParserNodeType.Id, ParserNodeType.Integer, ParserNodeType
 const binaryOpTypes = [ParserNodeType.BoolBinaryOp, ParserNodeType.MathOp, ParserNodeType.RelExp];
 const unaryOpTypes = [ParserNodeType.BoolUnaryOp];
 
-interface Node {
+interface ParserNode {
   type: ParserNodeType;
   value: string;
-  child?: Node;
-  left?: Node;
-  right?: Node;
+  child?: ParserNode;
+  left?: ParserNode;
+  right?: ParserNode;
 }
 
-export function infixToPrefix(node: Node | string): string {
+export function infixToPrefix(node: ParserNode | string): string {
   if (!node) return;
 
   if (typeof node === 'string') {
