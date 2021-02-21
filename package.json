@@ -19,7 +19,7 @@
   },
   "scripts": {
     "start": "ts-node src/index.ts",
-    "compile-grammar": "nearleyc grammar.ne --out src/grammar.js",
+    "cg": "nearleyc grammar.ne --out src/grammar.js",
     "test": "jest"
   },
   "author": "",
