@@ -14,7 +14,7 @@ export class SourceInformation {
     this.sourceFile = ts.createSourceFile(this.fileName, this.sourceText, ts.ScriptTarget.Latest);
     this.main = this.sourceFile.statements.filter((x) => ts.isFunctionDeclaration(x))[0] as ts.FunctionDeclaration;
 
-    this.mainPrecondition = this.getPreconditionFromNode(this.main);
+    this.mainPrecondition = this.getAnnotiationFromNode(this.main);
 
     const [postconditionRange] = ts.getTrailingCommentRanges(this.sourceFile.getFullText(), this.main.end);
     this.mainPostcondition = this.sourceFile
@@ -90,13 +90,14 @@ export class SourceInformation {
 
     // While statement
     if (ts.isWhileStatement(node) && ts.isBinaryExpression(node.expression)) {
-      return this.getPreconditionFromNode(node);
+      const invariant = this.getAnnotiationFromNode(node);
+      return invariant;
     }
 
     throw new Error(`Node of type "${ts.SyntaxKind[node.kind]}" not implemented`);
   }
 
-  private getPreconditionFromNode(node: ts.Node): string {
+  private getAnnotiationFromNode(node: ts.Node): string {
     const srcText = this.sourceFile.getFullText();
     const [firstCommentRange] = ts.getLeadingCommentRanges(srcText, node.getFullStart());
 

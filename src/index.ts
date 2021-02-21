@@ -11,7 +11,7 @@ const output = args.o || args.output || false;
 const sourceText = readFileSync(fileName, 'utf-8');
 const sourceInfo = new SourceInformation(fileName, sourceText);
 
-const prefixWeakestPrecondition = sourceInfo.getMainWeakestPrecondition({prefix: true, debug});
+const prefixWeakestPrecondition = sourceInfo.getMainWeakestPrecondition({ prefix: true, debug });
 const prefixMainPrecondition = sourceInfo.prefixMainPrecondition;
 const smtSourceText = generateSmtFile(`not (=> ${prefixMainPrecondition} ${prefixWeakestPrecondition})`);
 
