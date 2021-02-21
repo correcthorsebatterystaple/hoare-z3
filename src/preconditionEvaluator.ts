@@ -8,6 +8,7 @@ export class SourceInformation {
   private main: ts.FunctionDeclaration;
   public mainPrecondition: string;
   public mainPostcondition: string;
+  private mainWeakestPrecondition: string;
 
   constructor(private fileName: string, private sourceText: string) {
     this.sourceFile = ts.createSourceFile(this.fileName, this.sourceText, ts.ScriptTarget.Latest);
@@ -22,11 +23,17 @@ export class SourceInformation {
       .trim();
   }
 
-  getMainWeakestPrecondition(
-    node: ts.Node = this.main.body,
-    postcondition: string = this.mainPostcondition,
-    opt?: { depth?: number; debug?: boolean }
-  ): string {
+  get prefixMainPrecondition(): string {
+    return infixToPrefix(this.mainPrecondition);
+  }
+
+  getMainWeakestPrecondition(opts: { prefix?: boolean; debug?: boolean } = {}): string {
+    this.mainWeakestPrecondition =
+      this.mainWeakestPrecondition || this.getNodeWeakestPrecondition(this.main.body, this.mainPostcondition, {debug: !!opts.debug});
+    return opts.prefix ? infixToPrefix(this.mainWeakestPrecondition) : this.mainWeakestPrecondition;
+  }
+
+  getNodeWeakestPrecondition(node: ts.Node, postcondition: string, opt?: { depth?: number; debug?: boolean }): string {
     const depth = opt?.depth || 0;
     const debug = opt?.debug || false;
 
@@ -40,7 +47,7 @@ export class SourceInformation {
     if (ts.isBlock(node)) {
       // iterate through all the statements  in reverse and derive the weakest precondition for the block
       return node.statements.reduceRight(
-        (acc, statement) => this.getMainWeakestPrecondition(statement, acc, { depth: depth + 2 }),
+        (acc, statement) => this.getNodeWeakestPrecondition(statement, acc, { depth: depth + 2 }),
         postcondition
       );
     }
@@ -68,8 +75,8 @@ export class SourceInformation {
 
     // If Statement
     if (ts.isIfStatement(node) && ts.isBinaryExpression(node.expression)) {
-      let thenPrecondition = this.getMainWeakestPrecondition(node.thenStatement, postcondition, { depth: depth + 2 });
-      let elsePrecondition = this.getMainWeakestPrecondition(node.elseStatement, postcondition, { depth: depth + 2 });
+      let thenPrecondition = this.getNodeWeakestPrecondition(node.thenStatement, postcondition, { depth: depth + 2 });
+      let elsePrecondition = this.getNodeWeakestPrecondition(node.elseStatement, postcondition, { depth: depth + 2 });
 
       const expressionText = node.expression.getText(this.sourceFile);
       const conditionalPrecondition = conditionalTransform(expressionText, thenPrecondition, elsePrecondition);
