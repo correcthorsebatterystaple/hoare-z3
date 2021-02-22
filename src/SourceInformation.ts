@@ -29,7 +29,8 @@ export class SourceInformation {
 
   getMainWeakestPrecondition(opts: { prefix?: boolean; debug?: boolean } = {}): string {
     this.mainWeakestPrecondition =
-      this.mainWeakestPrecondition || this.getNodeWeakestPrecondition(this.main.body, this.mainPostcondition, {debug: !!opts.debug});
+      this.mainWeakestPrecondition ||
+      this.getNodeWeakestPrecondition(this.main.body, this.mainPostcondition, { debug: !!opts.debug });
     return opts.prefix ? infixToPrefix(this.mainWeakestPrecondition) : this.mainWeakestPrecondition;
   }
 
@@ -64,6 +65,27 @@ export class SourceInformation {
         postcondition,
         node.expression.left.text,
         node.expression.right.getText(this.sourceFile)
+      );
+
+      if (debug) {
+        console.log('--'.repeat(depth), assignmentPrecondition);
+      }
+
+      return assignmentPrecondition;
+    }
+
+    // variable statement
+    if (ts.isVariableStatement(node)) {
+      const declaration = node.declarationList.declarations[0];
+
+      if (!declaration || !declaration.initializer) {
+        return postcondition;
+      }
+
+      const assignmentPrecondition = assignmentTransform(
+        postcondition,
+        declaration.name.getText(this.sourceFile),
+        declaration.initializer.getText(this.sourceFile)
       );
 
       if (debug) {

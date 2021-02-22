@@ -1,5 +1,6 @@
 //? x = a AND y = b
-function max(x: number, y: number, z: number) {
+function max(x: number, y: number) {
+    let z;
     if (x > y) {
         z = x;
     } else {
