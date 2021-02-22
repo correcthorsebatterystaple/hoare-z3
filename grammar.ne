@@ -69,9 +69,9 @@ mul_term
     | function_call {% id %}
     |  "(" sum_term ")" {% d => d[1]%}
     |  term {% id %}
-function_call -> %id "(" (_ arg_list _) ")" {% d => ({type: 'function_call', name: d[0], arg_list: d[2][1]})%}
+function_call -> %id "(" (_ arg_list _) ")" {% d => ({type: 'function_call', value: d[0], args: d[2][1]})%}
 arg_list 
-    -> arg_list (_ "," _) sum_term {% d => ({type: 'arg_list', args: [...d[0], d[2]]})%}
+    -> arg_list (_ "," _) sum_term {% d => [...d[0], d[2]]%}
     |  sum_term # should return a single element array
 term -> (%id | %integer) {% d => d[0][0] %}
 

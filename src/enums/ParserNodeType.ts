@@ -7,4 +7,5 @@ export enum ParserNodeType {
   MathOp = 'math_op',
   BoolUnaryOp = 'bool_un_op',
   Root = 'root',
+  FunctionCall = 'function_call',
 }

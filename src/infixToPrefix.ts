@@ -9,9 +9,27 @@ const unaryOpTypes = [ParserNodeType.BoolUnaryOp];
 interface ParserNode {
   type: ParserNodeType;
   value: string;
+}
+
+interface TerminalNode extends ParserNode {
+  text: string;
+}
+
+interface UnaryOpNode extends ParserNode {
   child?: ParserNode;
+}
+
+interface BinaryOpNode extends ParserNode {
   left?: ParserNode;
   right?: ParserNode;
+}
+
+interface FunctionNode extends ParserNode {
+  args: string[];
+}
+
+function isNodeType<T extends ParserNode>(node: ParserNode, ...types: ParserNodeType[]): node is T {
+  return types.length && types.includes(node.type);
 }
 
 export function infixToPrefix(node: ParserNode | string): string {
@@ -29,17 +47,22 @@ export function infixToPrefix(node: ParserNode | string): string {
   }
 
   // terminal type
-  if (terminalTypes.includes(node.type)) {
+  if (isNodeType<TerminalNode>(node, ...terminalTypes)) {
     return node.value;
   }
 
   // unary operator
-  if (unaryOpTypes.includes(node.type)) {
+  if (isNodeType<UnaryOpNode>(node, ...unaryOpTypes)) {
     return `(${node.value} ${infixToPrefix(node.child)})`;
   }
 
   // binary operator
-  if (binaryOpTypes.includes(node.type)) {
+  if (isNodeType<BinaryOpNode>(node, ...binaryOpTypes)) {
     return `(${node.value} ${infixToPrefix(node.left)} ${infixToPrefix(node.right)})`;
+  }
+
+  // function call
+  if (isNodeType<FunctionNode>(node, ParserNodeType.FunctionCall)) {
+    return `(${node.value} ${node.args.join(' ')})`;
   }
 }
