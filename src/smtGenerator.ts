@@ -1,11 +1,20 @@
+import { infixToPrefix } from './infixToPrefix';
 import { tokenize } from './tokenizer';
 
-export function generateSmtFile(implication: string): string {
+/**
+ * Takes an array of conditions(infix) and outputs smt source code
+ * @param conditions Array of conditions that need to be asserted
+ * @returns Smt source code
+ */
+export function generateSmtText(conditions: string[]): string {
   const checkSatStatement = '(check-sat)';
   const parts = [];
 
-  parts.push(generateDeclareStatements(implication));
-  parts.push(generateAssertStatement(implication));
+  const condition = conditions.map(x => `(${x})`).join(' AND ');
+  const prefixCondition = infixToPrefix(condition);
+
+  parts.push(generateDeclareStatements(condition));
+  parts.push(generateAssertStatement(prefixCondition));
   parts.push(checkSatStatement);
 
   return parts.join('\n');
