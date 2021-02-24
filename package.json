@@ -22,7 +22,8 @@
   "scripts": {
     "start": "ts-node src/index.ts",
     "cg": "nearleyc grammar.ne --out src/grammar.js",
-    "test": "jest"
+    "test": "jest",
+    "gtest": "nearley-test -q ./src/grammar.js --input",
     "watch": "gulp watch"
   },
   "author": "",
