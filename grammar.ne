@@ -3,7 +3,7 @@ const moo = require('moo');
 // Order is important
 const lexer = moo.compile({
     implication_op: '=>',
-    rel_op: ['>', '>=', '<', '<=', '=', '!='],
+    rel_op: ['>', '>=', '<', '<=', '='],
     ws: /[ \t]/,
     integer: /\d+/,
     or_word: ['or', 'OR'],
@@ -12,10 +12,11 @@ const lexer = moo.compile({
     id: /[a-zA-Z]+/,
     left_para: /\(/,
     right_para: /\)/,
-    plus_sym: /\+/,
-    minus_sym: /\-/,
-    mul_sym: /\*/,
-    div_sym: /\//,
+    plus_op: '+',
+    minus_op: '-',
+    mul_op: '*',
+    div_op: {match: '//', value: s => 'div'},
+    mod_op: {match: '%', value: s => 'mod'},
     list_sep: /,/
 });
 %}
@@ -50,8 +51,9 @@ rel_exp
     | %id {% id %}
 # Math exprssion
 math_exp -> sum_term {% id %}
+
 sum_term 
-    -> sum_term (_ [\+\-] _) mul_term {% d => ({type: 'math_op', value: d[1][1], left: d[0], right: d[2]})%}
+    -> sum_term (_ ( %plus_op | %minus_op | %mod_op ) _) mul_term {% d => ({type: 'math_op', value: d[1][1][0], left: d[0], right: d[2]})%}
     |  mul_term {% id %}
 mul_term 
     -> mul_term (_ [\*\/] _) term {% d => ({type: 'math_op', value: d[1][1], left: d[0], right: d[2]})%}

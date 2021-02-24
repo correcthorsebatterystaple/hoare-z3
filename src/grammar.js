@@ -7,7 +7,7 @@ const moo = require('moo');
 // Order is important
 const lexer = moo.compile({
     implication_op: '=>',
-    rel_op: ['>', '>=', '<', '<=', '=', '!='],
+    rel_op: ['>', '>=', '<', '<=', '='],
     ws: /[ \t]/,
     integer: /\d+/,
     or_word: ['or', 'OR'],
@@ -16,10 +16,11 @@ const lexer = moo.compile({
     id: /[a-zA-Z]+/,
     left_para: /\(/,
     right_para: /\)/,
-    plus_sym: /\+/,
-    minus_sym: /\-/,
-    mul_sym: /\*/,
-    div_sym: /\//,
+    plus_op: '+',
+    minus_op: '-',
+    mul_op: '*',
+    div_op: {match: '//', value: s => 'div'},
+    mod_op: {match: '%', value: s => 'mod'},
     list_sep: /,/
 });
 var grammar = {
@@ -46,8 +47,11 @@ var grammar = {
     {"name": "rel_exp", "symbols": ["math_exp", "rel_exp$subexpression$1", "math_exp"], "postprocess": d => ({type: 'rel_exp', value: d[1][1], left: d[0], right: d[2]})},
     {"name": "rel_exp", "symbols": [(lexer.has("id") ? {type: "id"} : id)], "postprocess": id},
     {"name": "math_exp", "symbols": ["sum_term"], "postprocess": id},
-    {"name": "sum_term$subexpression$1", "symbols": ["_", /[\+\-]/, "_"]},
-    {"name": "sum_term", "symbols": ["sum_term", "sum_term$subexpression$1", "mul_term"], "postprocess": d => ({type: 'math_op', value: d[1][1], left: d[0], right: d[2]})},
+    {"name": "sum_term$subexpression$1$subexpression$1", "symbols": [(lexer.has("plus_op") ? {type: "plus_op"} : plus_op)]},
+    {"name": "sum_term$subexpression$1$subexpression$1", "symbols": [(lexer.has("minus_op") ? {type: "minus_op"} : minus_op)]},
+    {"name": "sum_term$subexpression$1$subexpression$1", "symbols": [(lexer.has("mod_op") ? {type: "mod_op"} : mod_op)]},
+    {"name": "sum_term$subexpression$1", "symbols": ["_", "sum_term$subexpression$1$subexpression$1", "_"]},
+    {"name": "sum_term", "symbols": ["sum_term", "sum_term$subexpression$1", "mul_term"], "postprocess": d => ({type: 'math_op', value: d[1][1][0], left: d[0], right: d[2]})},
     {"name": "sum_term", "symbols": ["mul_term"], "postprocess": id},
     {"name": "mul_term$subexpression$1", "symbols": ["_", /[\*\/]/, "_"]},
     {"name": "mul_term", "symbols": ["mul_term", "mul_term$subexpression$1", "term"], "postprocess": d => ({type: 'math_op', value: d[1][1], left: d[0], right: d[2]})},
