@@ -1,6 +1,8 @@
 @{%
 const moo = require('moo');
+// Order is important
 const lexer = moo.compile({
+    implication_op: '=>',
     rel_op: ['>', '>=', '<', '<=', '=', '!='],
     ws: /[ \t]/,
     integer: /\d+/,
@@ -24,27 +26,15 @@ b_exp
     -> _ or_exp _{% d => ({type: 'root', value: d[1]})%}
 # OR expression
 or_exp
-    -> or_exp (__ %or_word __) and_exp
-    {%
-        d => ({
-            type: 'bool_bin_op',
-            value:'or',
-            left: d[0],
-            right: d[2],
-        }) 
-    %}
+    -> or_exp (__ %or_word __) and_exp {% d => ({type: 'bool_bin_op', value:'or', left: d[0], right: d[2]}) %}
     |  and_exp {% id %}
 # AND expression
 and_exp
-    -> and_exp (__ %and_word __) not_exp 
-    {%
-        d => ({
-            type: 'bool_bin_op',
-            value: 'and',
-            left: d[0],
-            right: d[2],
-        }) 
-    %}
+    -> and_exp (__ %and_word __) impl_exp {% d => ({type: 'bool_bin_op', value: 'and', left: d[0], right: d[2]}) %}
+    |  impl_exp {% id %}
+# Implication expression
+impl_exp
+    -> impl_exp (_ %implication_op _) not_exp {% d => ({type: 'bool_bin_op', value: '=>', left: d[0], right: d[2]})%}
     |  not_exp {% id %}
 # NOT expression
 not_exp 

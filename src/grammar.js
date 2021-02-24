@@ -4,7 +4,9 @@
 function id(x) { return x[0]; }
 
 const moo = require('moo');
+// Order is important
 const lexer = moo.compile({
+    implication_op: '=>',
     rel_op: ['>', '>=', '<', '<=', '=', '!='],
     ws: /[ \t]/,
     integer: /\d+/,
@@ -25,25 +27,14 @@ var grammar = {
     ParserRules: [
     {"name": "b_exp", "symbols": ["_", "or_exp", "_"], "postprocess": d => ({type: 'root', value: d[1]})},
     {"name": "or_exp$subexpression$1", "symbols": ["__", (lexer.has("or_word") ? {type: "or_word"} : or_word), "__"]},
-    {"name": "or_exp", "symbols": ["or_exp", "or_exp$subexpression$1", "and_exp"], "postprocess": 
-        d => ({
-            type: 'bool_bin_op',
-            value:'or',
-            left: d[0],
-            right: d[2],
-        }) 
-            },
+    {"name": "or_exp", "symbols": ["or_exp", "or_exp$subexpression$1", "and_exp"], "postprocess": d => ({type: 'bool_bin_op', value:'or', left: d[0], right: d[2]})},
     {"name": "or_exp", "symbols": ["and_exp"], "postprocess": id},
     {"name": "and_exp$subexpression$1", "symbols": ["__", (lexer.has("and_word") ? {type: "and_word"} : and_word), "__"]},
-    {"name": "and_exp", "symbols": ["and_exp", "and_exp$subexpression$1", "not_exp"], "postprocess": 
-        d => ({
-            type: 'bool_bin_op',
-            value: 'and',
-            left: d[0],
-            right: d[2],
-        }) 
-            },
-    {"name": "and_exp", "symbols": ["not_exp"], "postprocess": id},
+    {"name": "and_exp", "symbols": ["and_exp", "and_exp$subexpression$1", "impl_exp"], "postprocess": d => ({type: 'bool_bin_op', value: 'and', left: d[0], right: d[2]})},
+    {"name": "and_exp", "symbols": ["impl_exp"], "postprocess": id},
+    {"name": "impl_exp$subexpression$1", "symbols": ["_", (lexer.has("implication_op") ? {type: "implication_op"} : implication_op), "_"]},
+    {"name": "impl_exp", "symbols": ["impl_exp", "impl_exp$subexpression$1", "not_exp"], "postprocess": d => ({type: 'bool_bin_op', value: '=>', left: d[0], right: d[2]})},
+    {"name": "impl_exp", "symbols": ["not_exp"], "postprocess": id},
     {"name": "not_exp$subexpression$1", "symbols": [(lexer.has("not_word") ? {type: "not_word"} : not_word), "_", {"literal":"("}, "_"]},
     {"name": "not_exp$subexpression$2", "symbols": ["_", {"literal":")"}]},
     {"name": "not_exp", "symbols": ["not_exp$subexpression$1", "or_exp", "not_exp$subexpression$2"], "postprocess": d => ({type: 'bool_un_op', value: 'not', child: d[1]})},
