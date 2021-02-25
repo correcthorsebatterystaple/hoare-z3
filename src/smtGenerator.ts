@@ -30,7 +30,7 @@ function generateDeclareStatements(str: string): string {
   }
 
   for (const token of tokenizedStr) {
-    if (token.type === 'id') {
+    if (token.type === ParserNodeType.Id || token.type === ParserNodeType.IdAux) {
       declareStatements.add(makeDeclareStatement(token.value));
     }
   }

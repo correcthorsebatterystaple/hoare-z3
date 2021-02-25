@@ -1,5 +1,6 @@
 export enum ParserNodeType {
   Id = 'id',
+  IdAux = 'id_aux',
   Integer = 'integer',
   RelOp = 'rel_op',
   BoolBinaryOp = 'bool_bin_op',
