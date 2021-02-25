@@ -11,6 +11,7 @@ export function generateSmtText(conditions: string[]): string {
   const parts = [];
 
   const condition = conditions.map(x => `(${x})`).join(' AND ');
+  // const condition = conditions[2];
   const prefixCondition = infixToPrefix(condition);
 
   parts.push(generateDeclareStatements(condition));
@@ -38,5 +39,5 @@ function generateDeclareStatements(str: string): string {
 }
 
 function generateAssertStatement(assertion: string): string {
-  return `(assert (${assertion}))`;
+  return `(assert (not ${assertion}))`;
 }
