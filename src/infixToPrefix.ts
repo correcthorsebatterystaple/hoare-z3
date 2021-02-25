@@ -1,30 +1,37 @@
 import * as grammar from './grammar';
 import * as nearley from 'nearley';
 import { ParserNodeType } from './enums/ParserNodeType';
+import { LexerToken } from './interfaces/LexerToken';
 
-const terminalTypes = [ParserNodeType.Id, ParserNodeType.Integer, ParserNodeType.RelOp];
+const terminalTypes = [ParserNodeType.Id, ParserNodeType.Integer];
 const binaryOpTypes = [ParserNodeType.BoolBinaryOp, ParserNodeType.MathOp, ParserNodeType.RelExp];
 const unaryOpTypes = [ParserNodeType.BoolUnaryOp];
 
 interface ParserNode {
   type: ParserNodeType;
-  value: string;
+}
+
+interface RootNode extends ParserNode{
+  value: ParserNode;
 }
 
 interface TerminalNode extends ParserNode {
-  text: string;
+  value: string;
 }
 
 interface UnaryOpNode extends ParserNode {
+  value: LexerToken;
   child?: ParserNode;
 }
 
 interface BinaryOpNode extends ParserNode {
+  value: LexerToken;
   left?: ParserNode;
   right?: ParserNode;
 }
 
 interface FunctionNode extends ParserNode {
+  value: LexerToken;
   args: string[];
 }
 
@@ -42,7 +49,7 @@ export function infixToPrefix(node: ParserNode | string): string {
   }
 
   // root type
-  if (node.type === ParserNodeType.Root) {
+  if (isNodeType<RootNode>(node, ParserNodeType.Root)) {
     return infixToPrefix(node.value);
   }
 
@@ -58,6 +65,9 @@ export function infixToPrefix(node: ParserNode | string): string {
 
   // binary operator
   if (isNodeType<BinaryOpNode>(node, ...binaryOpTypes)) {
+    if (node.value.toString() === '!=') {
+      return `(not (= ${infixToPrefix(node.left)} ${infixToPrefix(node.right)}))`
+    }
     return `(${node.value} ${infixToPrefix(node.left)} ${infixToPrefix(node.right)})`;
   }
 
