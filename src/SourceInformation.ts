@@ -3,6 +3,7 @@ import { assignmentTransform, conditionalTransform } from './hoareTransformers';
 
 
 let loopConditions: string[] = [];
+let globalPrecondition = "";
 
 /**
  * Given the node it returns a set of verification conditions that confirm the correctness of the code
@@ -18,6 +19,7 @@ export function getVerificationConditions(
   source: ts.SourceFile
 ): string[] {
   loopConditions = [];
+  globalPrecondition = precondition;
 
   const conditions: string[] = [];
 
@@ -94,7 +96,7 @@ function getWeakestPrecondition(node: ts.Node, postcondition: string, sourceFile
       // invariant and condition => invariant
       `((${invariant}) AND (${condition})) => (${invariantWeakestPrecondition})`,
       // invariant and not(condition) => postcondition
-      `((${invariant}) AND NOT(${condition})) => (${postcondition})`
+      `((${invariant}) AND NOT(${condition}) AND (${globalPrecondition})) => (${postcondition})`
     );
     return invariant;
   }
