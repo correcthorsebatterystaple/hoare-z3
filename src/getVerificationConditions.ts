@@ -96,7 +96,7 @@ function getWeakestPrecondition(node: ts.Node, postcondition: string, sourceFile
       // invariant and condition => invariant
       `((${invariant}) AND (${condition})) => (${invariantWeakestPrecondition})`,
       // invariant and not(condition) => postcondition
-      `((${invariant}) AND NOT(${condition}) AND (${globalPrecondition})) => (${postcondition})`
+      `((${invariant}) AND NOT(${condition})) => (${postcondition})`
     );
     return invariant;
   }

@@ -7,7 +7,7 @@ export function assignmentTransform(postcondition: string, left: string, right: 
     if (token.type === 'id' && token.value === left) {
       return acc.concat('(', right, ')');
     }
-    return acc.concat(token.text);
+    return acc.concat(token.value);
   }, "");
 }
 
