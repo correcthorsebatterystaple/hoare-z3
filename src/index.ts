@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from 'fs';
-import { getPostAnnotationFromNode, getPreAnnotiationFromNode, getVerificationConditions } from './SourceInformation';
+import { getPostAnnotationFromNode, getPreAnnotiationFromNode, getVerificationConditions } from './getVerificationConditions';
 import { generateSmtText } from './smtGenerator';
 import ts = require('typescript');
 import { infixToPrefix } from './infixToPrefix';
