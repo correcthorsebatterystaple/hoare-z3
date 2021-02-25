@@ -4,20 +4,21 @@ const moo = require('moo');
 const lexer = moo.compile({
     implication_op: '=>',
     rel_op: ['>', '>=', '<', '<=', '=', '!='],
-    ws: /[ \t]/,
-    integer: /\d+/,
     or_word: {match: ['or', 'OR'], value: s => 'or'},
     and_word: {match:['and', 'AND'], value: s =>'and'},
     not_word: {match:['not', 'NOT'], value: s =>'not'},
-    id: /[a-zA-Z]+/,
-    left_para: /\(/,
-    right_para: /\)/,
+    left_para: '(',
+    right_para: ')',
     plus_op: '+',
     minus_op: '-',
     mul_op: '*',
+    list_sep: ',',
     div_op: {match: '//', value: s => 'div'},
     mod_op: {match: '%', value: s => 'mod'},
-    list_sep: /,/
+    id: /[a-zA-Z]+/,
+    id_aux: {match: /_[a-zA-Z]+_/, value: s => s.slice(1,-1)},
+    integer: /\d+/,
+    ws: /[ \t]/,
 });
 %}
 
@@ -63,7 +64,7 @@ function_call -> %id "(" (_ arg_list _) ")" {% d => ({type: 'function_call', val
 arg_list 
     -> arg_list (_ "," _) sum_term {% d => [...d[0], d[2]]%}
     |  sum_term # should return a single element array
-term -> (%id | %integer) {% d => d[0][0] %}
+term -> (%id | %integer | %id_aux) {% d => d[0][0] %}
 
 _ -> %ws:* # optional whitespace
 __ -> %ws:+ # mandatory whitespace
