@@ -1,4 +1,5 @@
-import { infixToPrefix } from './infixToPrefix';
+import { ParserNodeType } from './enums/ParserNodeType';
+import { infixToSmtPrefix } from './infixToPrefix';
 import { tokenize } from './tokenizer';
 
 /**
@@ -12,7 +13,7 @@ export function generateSmtText(conditions: string[]): string {
 
   const condition = conditions.map(x => `(${x})`).join(' AND ');
   // const condition = conditions[2];
-  const prefixCondition = infixToPrefix(condition);
+  const prefixCondition = infixToSmtPrefix(condition);
 
   parts.push(generateDeclareStatements(condition));
   parts.push(generateAssertStatement(prefixCondition));

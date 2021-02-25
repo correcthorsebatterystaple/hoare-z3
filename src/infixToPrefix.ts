@@ -39,18 +39,18 @@ function isNodeType<T extends ParserNode>(node: ParserNode, ...types: ParserNode
   return types.length && types.includes(node.type);
 }
 
-export function infixToPrefix(node: ParserNode | string): string {
+export function infixToSmtPrefix(node: ParserNode | string): string {
   if (!node) return;
 
   if (typeof node === 'string') {
     const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
     parser.feed(node);
-    return infixToPrefix(parser.results[0]);
+    return infixToSmtPrefix(parser.results[0]);
   }
 
   // root type
   if (isNodeType<RootNode>(node, ParserNodeType.Root)) {
-    return infixToPrefix(node.value);
+    return infixToSmtPrefix(node.value);
   }
 
   // terminal type
@@ -60,15 +60,21 @@ export function infixToPrefix(node: ParserNode | string): string {
 
   // unary operator
   if (isNodeType<UnaryOpNode>(node, ...unaryOpTypes)) {
-    return `(${node.value} ${infixToPrefix(node.child)})`;
+    return `(${node.value} ${infixToSmtPrefix(node.child)})`;
   }
 
   // binary operator
   if (isNodeType<BinaryOpNode>(node, ...binaryOpTypes)) {
-    if (node.value.toString() === '!=') {
-      return `(not (= ${infixToPrefix(node.left)} ${infixToPrefix(node.right)}))`
+    if (node.value.value === '!=') {
+      return `(not (= ${infixToSmtPrefix(node.left)} ${infixToSmtPrefix(node.right)}))`
     }
-    return `(${node.value} ${infixToPrefix(node.left)} ${infixToPrefix(node.right)})`;
+    if (node.value.value === '//') {
+      return `(div ${infixToSmtPrefix(node.left)} ${infixToSmtPrefix(node.right)})`
+    }
+    if (node.value.value === '%') {
+      return `(mod ${infixToSmtPrefix(node.left)} ${infixToSmtPrefix(node.right)})`
+    }
+    return `(${node.value} ${infixToSmtPrefix(node.left)} ${infixToSmtPrefix(node.right)})`;
   }
 
   // function call
