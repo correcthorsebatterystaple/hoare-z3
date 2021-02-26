@@ -1,9 +1,8 @@
 //? x = a AND y = b
 function max(x: number, y: number) {
-    let z;
     if (x > y) {
-        z = x;
+        return x;
     } else {
-        z = y;
+        return y;
     }
-} //? z >= a AND z >= b AND (z = a OR z = b)
+} //? $ret >= a AND $ret >= b AND ($ret = a OR $ret = b)
