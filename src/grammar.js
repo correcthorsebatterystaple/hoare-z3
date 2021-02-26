@@ -19,8 +19,9 @@ const lexer = moo.compile({
     list_sep: ',',
     div_op: '//',
     mod_op: '%',
+    return_id: '$ret',
     id: /[a-zA-Z]+/,
-    id_aux: {match: /_[a-zA-Z]+_/, value: s => s.slice(1,-1)},
+    id_aux: {match: /_[a-zA-Z]+_/},
     integer: /\d+/,
     ws: /[ \t]/,
 });
@@ -68,6 +69,7 @@ var grammar = {
     {"name": "term$subexpression$1", "symbols": [(lexer.has("id") ? {type: "id"} : id)]},
     {"name": "term$subexpression$1", "symbols": [(lexer.has("integer") ? {type: "integer"} : integer)]},
     {"name": "term$subexpression$1", "symbols": [(lexer.has("id_aux") ? {type: "id_aux"} : id_aux)]},
+    {"name": "term$subexpression$1", "symbols": [(lexer.has("return_id") ? {type: "return_id"} : return_id)]},
     {"name": "term", "symbols": ["term$subexpression$1"], "postprocess": d => d[0][0]},
     {"name": "_$ebnf$1", "symbols": []},
     {"name": "_$ebnf$1", "symbols": ["_$ebnf$1", (lexer.has("ws") ? {type: "ws"} : ws)], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},

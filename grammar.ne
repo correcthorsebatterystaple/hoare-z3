@@ -15,8 +15,9 @@ const lexer = moo.compile({
     list_sep: ',',
     div_op: '//',
     mod_op: '%',
+    return_id: '$ret',
     id: /[a-zA-Z]+/,
-    id_aux: {match: /_[a-zA-Z]+_/, value: s => s.slice(1,-1)},
+    id_aux: {match: /_[a-zA-Z]+_/},
     integer: /\d+/,
     ws: /[ \t]/,
 });
@@ -64,7 +65,7 @@ function_call -> %id "(" (_ arg_list _) ")" {% d => ({type: 'function_call', val
 arg_list 
     -> arg_list (_ "," _) sum_term {% d => [...d[0], d[2]]%}
     |  sum_term # should return a single element array
-term -> (%id | %integer | %id_aux) {% d => d[0][0] %}
+term -> (%id | %integer | %id_aux | %return_id) {% d => d[0][0] %}
 
 _ -> %ws:* # optional whitespace
 __ -> %ws:+ # mandatory whitespace
