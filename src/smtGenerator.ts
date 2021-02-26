@@ -25,13 +25,14 @@ export function generateSmtText(conditions: string[]): string {
 function generateDeclareStatements(str: string): string {
   const tokenizedStr = tokenize(str);
   const declareStatements = new Set<string>();
+  const declarableTypes: string[] = [ParserNodeType.Id, ParserNodeType.IdAux, ParserNodeType.ReturnId];
 
   function makeDeclareStatement(idStr: string): string {
     return `(declare-const ${idStr} Int)`;
   }
 
   for (const token of tokenizedStr) {
-    if (token.type === ParserNodeType.Id || token.type === ParserNodeType.IdAux) {
+    if (declarableTypes.includes(token.type as ParserNodeType)) {
       declareStatements.add(makeDeclareStatement(token.value));
     }
   }

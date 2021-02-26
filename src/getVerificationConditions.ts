@@ -101,6 +101,16 @@ function getWeakestPrecondition(node: ts.Node, postcondition: string, sourceFile
     return invariant;
   }
 
+  if (ts.isReturnStatement(node)) {
+    const returnPrecondition = assignmentTransform(
+      postcondition,
+      '$ret',
+      node.expression.getText(sourceFile)
+    );
+
+    return returnPrecondition;
+  }
+
   throw new Error(`Node of type "${ts.SyntaxKind[node.kind]}" not implemented`);
 }
 

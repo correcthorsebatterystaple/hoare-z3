@@ -3,9 +3,9 @@ import * as nearley from 'nearley';
 import { ParserNodeType } from './enums/ParserNodeType';
 import { LexerToken } from './interfaces/LexerToken';
 
-const terminalTypes = [ParserNodeType.Id, ParserNodeType.Integer, ParserNodeType.IdAux];
-const binaryOpTypes = [ParserNodeType.BoolBinaryOp, ParserNodeType.MathOp, ParserNodeType.RelExp];
-const unaryOpTypes = [ParserNodeType.BoolUnaryOp];
+const TERMINAL_TYPES = [ParserNodeType.Id, ParserNodeType.Integer, ParserNodeType.IdAux, ParserNodeType.ReturnId];
+const BINARY_OP_TYPES = [ParserNodeType.BoolBinaryOp, ParserNodeType.MathOp, ParserNodeType.RelExp];
+const UNARY_OP_TYPES = [ParserNodeType.BoolUnaryOp];
 
 interface ParserNode {
   type: ParserNodeType;
@@ -54,17 +54,17 @@ export function infixToSmtPrefix(node: ParserNode | string): string {
   }
 
   // terminal type
-  if (isNodeType<TerminalNode>(node, ...terminalTypes)) {
+  if (isNodeType<TerminalNode>(node, ...TERMINAL_TYPES)) {
     return node.value;
   }
 
   // unary operator
-  if (isNodeType<UnaryOpNode>(node, ...unaryOpTypes)) {
+  if (isNodeType<UnaryOpNode>(node, ...UNARY_OP_TYPES)) {
     return `(${node.value} ${infixToSmtPrefix(node.child)})`;
   }
 
   // binary operator
-  if (isNodeType<BinaryOpNode>(node, ...binaryOpTypes)) {
+  if (isNodeType<BinaryOpNode>(node, ...BINARY_OP_TYPES)) {
     if (node.value.value === '!=') {
       return `(not (= ${infixToSmtPrefix(node.left)} ${infixToSmtPrefix(node.right)}))`
     }
