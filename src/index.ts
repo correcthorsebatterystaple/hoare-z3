@@ -1,8 +1,12 @@
 import { readFileSync, writeFileSync } from 'fs';
-import { getPostAnnotationFromNode, getPreAnnotiationFromNode, getVerificationConditions } from './getVerificationConditions';
+import {
+  getPostAnnotationFromNode,
+  getPreAnnotiationFromNode,
+  getVerificationConditions,
+} from './getVerificationConditions';
 import { generateSmtText } from './smtGenerator';
 import ts = require('typescript');
-import { infixToPrefix } from './infixToPrefix';
+import { infixToSmtPrefix } from './infixToPrefix';
 
 let args = require('minimist')(process.argv.slice(2));
 const fileName = args._[0];
@@ -17,7 +21,7 @@ const precondition = getPreAnnotiationFromNode(func, sourceFile);
 const postcondition = getPostAnnotationFromNode(func, sourceFile);
 
 const verificationConditions = getVerificationConditions(func.body, precondition, postcondition, sourceFile);
-console.log(verificationConditions.map((x) => x));
+console.log(verificationConditions);
 const smtText = generateSmtText(verificationConditions);
 
 if (output) {
