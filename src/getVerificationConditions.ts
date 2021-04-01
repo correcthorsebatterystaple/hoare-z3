@@ -3,7 +3,7 @@ import { assignmentTransform, conditionalTransform } from './hoareTransformers';
 
 
 let loopConditions: string[] = [];
-let globalPrecondition = "";
+let globalPrecondition = '';
 
 /**
  * Given the node it returns a set of verification conditions that confirm the correctness of the code
@@ -18,6 +18,7 @@ export function getVerificationConditions(
   postcondition: string,
   source: ts.SourceFile
 ): string[] {
+  console.log(postcondition);
   loopConditions = [];
   globalPrecondition = precondition;
 
@@ -36,10 +37,11 @@ function getWeakestPrecondition(node: ts.Node, postcondition: string, sourceFile
   // block statement
   if (ts.isBlock(node)) {
     // iterate through all the statements  in reverse and derive the weakest precondition for the block
-    return node.statements.reduceRight(
-      (acc, statement) => getWeakestPrecondition(statement, acc, sourceFile, depth + 1),
-      postcondition
-    );
+    return node.statements.reduceRight((acc, statement) => {
+      const weakestPrecondition =  getWeakestPrecondition(statement, acc, sourceFile, depth + 1);
+      console.log(weakestPrecondition);
+      return weakestPrecondition;
+    }, postcondition);
   }
 
   // Assignment statement
@@ -102,11 +104,7 @@ function getWeakestPrecondition(node: ts.Node, postcondition: string, sourceFile
   }
 
   if (ts.isReturnStatement(node)) {
-    const returnPrecondition = assignmentTransform(
-      postcondition,
-      '$ret',
-      node.expression.getText(sourceFile)
-    );
+    const returnPrecondition = assignmentTransform(postcondition, '$ret', node.expression.getText(sourceFile));
 
     return returnPrecondition;
   }
