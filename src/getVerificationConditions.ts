@@ -1,5 +1,5 @@
 import ts = require('typescript');
-import { assignmentTransform, conditionalTransform } from './hoareTransformers';
+import { arrayStoreTransform, assignmentTransform, conditionalTransform } from './hoareTransformers';
 
 
 let loopConditions: string[] = [];
@@ -76,6 +76,21 @@ function getWeakestPrecondition(node: ts.Node, postcondition: string, sourceFile
     );
 
     return assignmentPrecondition;
+  }
+
+  // Array assignment
+  if (
+    ts.isExpressionStatement(node) &&
+    ts.isBinaryExpression(node.expression) &&
+    ts.isElementAccessExpression(node.expression.left)
+  ) {
+    const arrayIdentifier = node.expression.left.expression.getText(sourceFile);
+    const arrayArgIdentifier = node.expression.left.argumentExpression.getText(sourceFile);
+    const assignedValue = node.expression.right.getText(sourceFile);
+
+    const arrayStorePrecondition = arrayStoreTransform(postcondition, arrayIdentifier, arrayArgIdentifier, assignedValue);
+
+    return arrayStorePrecondition;
   }
 
   // If Statement

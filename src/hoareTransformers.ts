@@ -28,3 +28,21 @@ export function conditionalTransform(
 }
 
 export function loopTransform() {}
+
+export function arrayStoreTransform(
+  postcondition: string,
+  arrayId: string,
+  argId: string,
+  assignment: string
+): string {
+  const arrayMatcher = new RegExp(
+    `(${arrayId})\\s*((?:\\{\\s*\\w+\\s*<\\-\\s*\\w+\\s*\\})*)\\s*\\[\\s*(\\w+)\\s*\\]`,
+    'g'
+  );
+
+  if (arrayMatcher.test(postcondition)) {
+    return postcondition.replace(arrayMatcher, `$1$2{${argId}<-${assignment}}[$3]`);
+  }
+
+  return postcondition;
+}
