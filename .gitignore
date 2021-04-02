@@ -2,3 +2,4 @@ node_modules
 *.smt
 *.smt2
 .vscode
+!util.smt
