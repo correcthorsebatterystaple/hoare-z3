@@ -16,6 +16,6 @@
 ))
 (define-fun is_perm ((A (Array Int Int)) (B (Array Int Int)) (n Int)) Bool (
   forall ((i Int)) (
-    => (and (>= i 0) (< i n)) (exists ((j Int)) (= (select B j) (select A i)))
+    => (and (>= i 0) (< i n)) (exists ((j Int)) (and (= (select B j) (select A i)) (>= j 0) (< j n)))
   )
 ))
