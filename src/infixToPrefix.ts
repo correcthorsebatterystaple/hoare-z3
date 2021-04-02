@@ -85,7 +85,7 @@ export function infixToSmtPrefix(node: ParserNode | string): string {
 
   // function call
   if (isNodeType<FunctionNode>(node, ParserNodeType.FunctionCall)) {
-    return `(${node.value} ${node.args.join(' ')})`;
+    return `(${node.value} ${node.args.map(arg => infixToSmtPrefix(arg)).join(' ')})`;
   }
 
   // arrays
