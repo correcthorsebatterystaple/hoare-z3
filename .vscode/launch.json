@@ -1,10 +1,20 @@
 {
     "configurations": [
         {
+            "name": "Current TS Sample File",
+            "type": "node",
+            "request": "launch",
+            "args": ["./src/index.ts", "${relativeFile}"],
+            "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+        "protocol": "inspector"
+        },
+        {
             "name": "Current TS File",
             "type": "node",
             "request": "launch",
-            "args": ["./src/index.ts", "./sample-programs/test.ts"],
+            "args": ["${relativeFile}"],
             "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
