@@ -1,5 +1,5 @@
 import ts = require('typescript');
-import { arrayStoreTransform, assignmentTransform, conditionalTransform } from './hoareTransformers';
+import { arrayStoreTransform, assignmentTransform, conditionalTransform, prefixArrays } from './hoareTransformers';
 
 
 let loopConditions: string[] = [];
@@ -24,15 +24,18 @@ export function getVerificationConditions(
 
   const conditions: string[] = [];
 
+  const weakestPrecondition = getWeakestPrecondition(node, postcondition, source);
+
   // precondition implies weakest precondition
-  const c1 = `(${precondition}) => (${getWeakestPrecondition(node, postcondition, source)})`;
+  const c1 = `(${precondition}) => (${prefixArrays(weakestPrecondition)})`;
   // add loop conditions for all loops
   conditions.push(c1, ...loopConditions);
 
   return conditions;
 }
 
-function getWeakestPrecondition(node: ts.Node, postcondition: string, sourceFile: ts.SourceFile, depth = 0): string {
+function getWeakestPrecondition(node: ts.Node, _postcondition: string, sourceFile: ts.SourceFile, depth = 0): string {
+  const postcondition = prefixArrays(_postcondition)
   if (!node) return undefined;
   // block statement
   if (ts.isBlock(node)) {

@@ -11,7 +11,7 @@ interface ParserNode {
   type: ParserNodeType;
 }
 
-interface RootNode extends ParserNode{
+interface RootNode extends ParserNode {
   value: ParserNode;
 }
 
@@ -33,6 +33,12 @@ interface BinaryOpNode extends ParserNode {
 interface FunctionNode extends ParserNode {
   value: LexerToken;
   args: string[];
+}
+
+interface ArrayNode extends ParserNode {
+  value: LexerToken;
+  arg: ParserNode;
+  replace?: ParserNode[][];
 }
 
 function isNodeType<T extends ParserNode>(node: ParserNode, ...types: ParserNodeType[]): node is T {
@@ -66,13 +72,13 @@ export function infixToSmtPrefix(node: ParserNode | string): string {
   // binary operator
   if (isNodeType<BinaryOpNode>(node, ...BINARY_OP_TYPES)) {
     if (node.value.value === '!=') {
-      return `(not (= ${infixToSmtPrefix(node.left)} ${infixToSmtPrefix(node.right)}))`
+      return `(not (= ${infixToSmtPrefix(node.left)} ${infixToSmtPrefix(node.right)}))`;
     }
     if (node.value.value === '//') {
-      return `(div ${infixToSmtPrefix(node.left)} ${infixToSmtPrefix(node.right)})`
+      return `(div ${infixToSmtPrefix(node.left)} ${infixToSmtPrefix(node.right)})`;
     }
     if (node.value.value === '%') {
-      return `(mod ${infixToSmtPrefix(node.left)} ${infixToSmtPrefix(node.right)})`
+      return `(mod ${infixToSmtPrefix(node.left)} ${infixToSmtPrefix(node.right)})`;
     }
     return `(${node.value} ${infixToSmtPrefix(node.left)} ${infixToSmtPrefix(node.right)})`;
   }
@@ -81,4 +87,20 @@ export function infixToSmtPrefix(node: ParserNode | string): string {
   if (isNodeType<FunctionNode>(node, ParserNodeType.FunctionCall)) {
     return `(${node.value} ${node.args.join(' ')})`;
   }
+
+  // arrays
+  if (isNodeType<ArrayNode>(node, ParserNodeType.Array)) {
+    if (!node.replace?.length) {
+      return `(select ${node.value} ${infixToSmtPrefix(node.arg)})`;
+    }
+
+    const storeArray = node.replace.reduce((acc, curr) => {
+      const [storeIdx, storeVal] = curr;
+      return `(store ${acc} ${infixToSmtPrefix(storeIdx)} ${infixToSmtPrefix(storeVal)})`;
+    }, node.value.toString());
+
+    return `(select ${storeArray} ${infixToSmtPrefix(node.arg)})`;
+  }
+
+  throw new Error('INVALID-NODE-TYPE');
 }

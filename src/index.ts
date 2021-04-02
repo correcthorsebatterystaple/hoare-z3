@@ -6,7 +6,7 @@ import {
 } from './getVerificationConditions';
 import { generateSmtText } from './smtGenerator';
 import ts = require('typescript');
-import { infixToSmtPrefix } from './infixToPrefix';
+import { prefixArrays } from './hoareTransformers';
 
 let args = require('minimist')(process.argv.slice(2));
 const fileName = args._[0];
@@ -20,12 +20,16 @@ const func = sourceFile.statements.filter((x) => ts.isFunctionDeclaration(x))[0]
 const precondition = getPreAnnotiationFromNode(func, sourceFile);
 const postcondition = getPostAnnotationFromNode(func, sourceFile);
 
-const verificationConditions = getVerificationConditions(func.body, precondition, postcondition, sourceFile);
-console.log(verificationConditions);
+const verificationConditions = getVerificationConditions(func.body, precondition, postcondition, sourceFile).map((v) =>
+  prefixArrays(v)
+);
+
+// console.log(verificationConditions);
 const smtText = generateSmtText(verificationConditions);
 
 if (output) {
   writeFileSync(output, smtText);
 } else {
+  console.log('------------------OUTPUT------------------');
   console.log(smtText);
 }

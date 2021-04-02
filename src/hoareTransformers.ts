@@ -46,3 +46,12 @@ export function arrayStoreTransform(
 
   return postcondition;
 }
+
+export function prefixArrays(str: string) {
+  const arrayMatcher = /(?<!\!)(\w+)(?=\s*(?:\{.*?\})*\s*\[.*?\])/g;
+  if (arrayMatcher.test(str)) {
+    return str.replace(arrayMatcher, '!$1');
+  }
+
+  return str;
+}

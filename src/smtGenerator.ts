@@ -27,13 +27,12 @@ function generateDeclareStatements(str: string): string {
   const declareStatements = new Set<string>();
   const declarableTypes: string[] = [ParserNodeType.Id, ParserNodeType.IdAux, ParserNodeType.ReturnId];
 
-  function makeDeclareStatement(idStr: string): string {
-    return `(declare-const ${idStr} Int)`;
-  }
-
   for (const token of tokenizedStr) {
-    if (declarableTypes.includes(token.type as ParserNodeType)) {
-      declareStatements.add(makeDeclareStatement(token.value));
+    if (declarableTypes.includes(token.type)) {
+      declareStatements.add(`(declare-const ${token.value} Int)`);
+    }
+    if (token.type === 'array_id') {
+      declareStatements.add(`(declare-const ${token.value} (Array Int Int))`)
     }
   }
 
