@@ -7,6 +7,7 @@ import {
 import { generateSmtText } from './smtGenerator';
 import ts from 'typescript';
 import { prefixArrays } from './hoareTransformers';
+import { isValidParse } from './parser';
 
 let args = require('minimist')(process.argv.slice(2));
 export const OPTS = {
@@ -14,7 +15,7 @@ export const OPTS = {
   output: args.o || args.output || false,
   annotate: args.a || args.annotate || false,
 };
-export const printer = ts.createPrinter({removeComments: false});
+export const printer = ts.createPrinter({ removeComments: false });
 
 const sourceText = readFileSync(OPTS.filename, 'utf-8');
 
@@ -23,7 +24,14 @@ const sourceFile = ts.createSourceFile(OPTS.filename, sourceText, ts.ScriptTarge
 const func = sourceFile.statements.filter((x) => ts.isFunctionDeclaration(x))[0] as ts.FunctionDeclaration;
 
 const precondition = getPreAnnotiationFromNode(func, sourceFile);
+if (!isValidParse(precondition)) {
+  throw new Error('Invalid precondition');
+}
+
 const postcondition = getPostAnnotationFromNode(func, sourceFile);
+if (!isValidParse(postcondition)) {
+  throw new Error('Invalid postcondition');
+}
 
 const verificationConditions = getVerificationConditions(func.body, precondition, postcondition, sourceFile).map((v) =>
   prefixArrays(v)
