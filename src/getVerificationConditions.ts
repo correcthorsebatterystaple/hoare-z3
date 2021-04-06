@@ -168,7 +168,7 @@ export function getPostAnnotationFromNode(node: ts.Node, sourceFile: ts.SourceFi
   const [firstCommentRange] = commentRanges;
   const comment = sourceFile.getFullText().slice(firstCommentRange.pos, firstCommentRange.end);
 
-  if (comment.startsWith('//?')) {
+  if (!comment.startsWith('//?')) {
     throwAnnotationMissingError(node, sourceFile)
   }
   
