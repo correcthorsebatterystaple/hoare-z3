@@ -1,3 +1,4 @@
+import { LexerTokenType } from './enums/LexerTokenType';
 import { ParserNodeType } from './enums/ParserNodeType';
 import { tokenize } from './tokenizer';
 

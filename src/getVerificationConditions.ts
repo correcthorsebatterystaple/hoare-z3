@@ -1,4 +1,5 @@
 import ts = require('typescript');
+import { printer } from '.';
 import { arrayStoreTransform, assignmentTransform, conditionalTransform, prefixArrays } from './hoareTransformers';
 
 
@@ -42,6 +43,7 @@ function getWeakestPrecondition(node: ts.Node, _postcondition: string, sourceFil
     // iterate through all the statements  in reverse and derive the weakest precondition for the block
     return node.statements.reduceRight((acc, statement) => {
       const weakestPrecondition =  getWeakestPrecondition(statement, acc, sourceFile, depth + 1);
+      addLeadingAnnotation(statement, prefixArrays(weakestPrecondition));
       console.log(weakestPrecondition);
       return weakestPrecondition;
     }, postcondition);
@@ -162,4 +164,9 @@ export function getPostAnnotationFromNode(node: ts.Node, sourceFile: ts.SourceFi
   }
 
   throw new Error(`"${comment.slice(0, 10)}${comment.length > 10 ? '...' : ''}" does not begin with "//? "`);
+}
+
+function addLeadingAnnotation(node: ts.Node, annotation: string): ts.Node {
+  ts.addSyntheticLeadingComment(node, ts.SyntaxKind.SingleLineCommentTrivia, `? ${annotation}`);
+  return node;
 }
