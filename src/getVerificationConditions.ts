@@ -89,7 +89,12 @@ function getWeakestPrecondition(node: ts.Node, _postcondition: string, sourceFil
     const arrayArgIdentifier = node.expression.left.argumentExpression.getText(sourceFile);
     const assignedValue = node.expression.right.getText(sourceFile);
 
-    const arrayStorePrecondition = arrayStoreTransform(postcondition, arrayIdentifier, arrayArgIdentifier, assignedValue);
+    const arrayStorePrecondition = arrayStoreTransform(
+      postcondition,
+      arrayIdentifier,
+      arrayArgIdentifier,
+      assignedValue
+    );
 
     return arrayStorePrecondition;
   }
@@ -135,15 +140,19 @@ function getWeakestPrecondition(node: ts.Node, _postcondition: string, sourceFil
  */
 export function getPreAnnotiationFromNode(node: ts.Node, sourceFile: ts.SourceFile): string {
   const srcText = sourceFile.getFullText();
-  const [firstCommentRange] = ts.getLeadingCommentRanges(srcText, node.getFullStart());
+  const commentRanges = ts.getLeadingCommentRanges(srcText, node.getFullStart());
+  if (!commentRanges?.length) {
+    throwAnnotationMissingError(node, sourceFile)
+  }
+  const [firstCommentRange] = commentRanges;
 
   const comment = srcText.slice(firstCommentRange.pos, firstCommentRange.end);
 
-  if (comment.startsWith('//? ')) {
-    return comment.slice(3).trim();
+  if (!comment.startsWith('//? ')) {
+    throwAnnotationMissingError(node, sourceFile)
   }
 
-  throw new Error(`"${comment.slice(0, 10)}${comment.length > 10 ? '...' : ''}" does not begin with "//? "`);
+  return comment.slice(3).trim();
 }
 
 /**
@@ -152,17 +161,26 @@ export function getPreAnnotiationFromNode(node: ts.Node, sourceFile: ts.SourceFi
  * @param sourceFile Source code for the node
  */
 export function getPostAnnotationFromNode(node: ts.Node, sourceFile: ts.SourceFile): string {
-  const [firstCommentRange] = ts.getTrailingCommentRanges(sourceFile.getFullText(), node.end);
+  const commentRanges = ts.getTrailingCommentRanges(sourceFile.getFullText(), node.end);
+  if (!commentRanges?.length) {
+    throwAnnotationMissingError(node, sourceFile)
+  }
+  const [firstCommentRange] = commentRanges;
   const comment = sourceFile.getFullText().slice(firstCommentRange.pos, firstCommentRange.end);
 
   if (comment.startsWith('//?')) {
-    return comment.slice(3).trim();
+    throwAnnotationMissingError(node, sourceFile)
   }
-
-  throw new Error(`"${comment.slice(0, 10)}${comment.length > 10 ? '...' : ''}" does not begin with "//? "`);
+  
+  return comment.slice(3).trim();
 }
 
 function addLeadingAnnotation(node: ts.Node, annotation: string): ts.Node {
   ts.addSyntheticLeadingComment(node, ts.SyntaxKind.SingleLineCommentTrivia, `? ${annotation}`);
   return node;
+}
+
+function throwAnnotationMissingError(node: ts.Node, sourceFile: ts.SourceFile) {
+  const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getFullStart());
+  throw new Error(`Expected annotation at ${line + 1}:${character + 1} ${sourceFile.fileName}`);
 }
