@@ -5,9 +5,8 @@ import {
   getVerificationConditions,
 } from './getVerificationConditions';
 import { generateSmtText } from './smtGenerator';
-import ts = require('typescript');
+import ts from 'typescript';
 import { prefixArrays } from './hoareTransformers';
-import { Console } from 'console';
 
 let args = require('minimist')(process.argv.slice(2));
 export const OPTS = {
@@ -42,7 +41,6 @@ if (OPTS.output) {
 
 if (OPTS.annotate) {
   writeFileSync(`${OPTS.filename}.annotated.ts`, printer.printFile(sourceFile));
-} else {
   console.log('-----------------ANNOTATED----------------');
   console.log(printer.printFile(sourceFile));
 }

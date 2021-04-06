@@ -2,9 +2,7 @@ import ts = require('typescript');
 import { printer } from '.';
 import { arrayStoreTransform, assignmentTransform, conditionalTransform, prefixArrays } from './hoareTransformers';
 
-
 let loopConditions: string[] = [];
-let globalPrecondition = '';
 
 /**
  * Given the node it returns a set of verification conditions that confirm the correctness of the code
@@ -21,7 +19,6 @@ export function getVerificationConditions(
 ): string[] {
   console.log(postcondition);
   loopConditions = [];
-  globalPrecondition = precondition;
 
   const conditions: string[] = [];
 
@@ -36,15 +33,14 @@ export function getVerificationConditions(
 }
 
 function getWeakestPrecondition(node: ts.Node, _postcondition: string, sourceFile: ts.SourceFile, depth = 0): string {
-  const postcondition = prefixArrays(_postcondition)
+  const postcondition = prefixArrays(_postcondition);
   if (!node) return undefined;
   // block statement
   if (ts.isBlock(node)) {
     // iterate through all the statements  in reverse and derive the weakest precondition for the block
     return node.statements.reduceRight((acc, statement) => {
-      const weakestPrecondition =  getWeakestPrecondition(statement, acc, sourceFile, depth + 1);
+      const weakestPrecondition = getWeakestPrecondition(statement, acc, sourceFile, depth + 1);
       addLeadingAnnotation(statement, prefixArrays(weakestPrecondition));
-      console.log(weakestPrecondition);
       return weakestPrecondition;
     }, postcondition);
   }
