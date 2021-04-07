@@ -31,7 +31,7 @@ function generateDeclareStatements(str: string): string {
     if (declarableTypes.includes(token.type)) {
       declareStatements.add(`(declare-const ${token.value} Int)`);
     }
-    if (token.type === 'array_id') {
+    if (token.type === ParserNodeType.ArrayId || token.type === ParserNodeType.ArrayIdAux) {
       declareStatements.add(`(declare-const ${token.value} (Array Int Int))`)
     }
   }

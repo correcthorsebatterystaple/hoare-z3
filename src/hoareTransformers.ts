@@ -5,13 +5,15 @@ import { tokenize } from './tokenizer';
 export function assignmentTransform(postcondition: string, left: string, right: string): string {
   const replaceableTypes: string[] = [ParserNodeType.Id, ParserNodeType.ReturnId];
   const tokenizedPostcondition = tokenize(postcondition);
-  return tokenizedPostcondition.reduce((acc, token) => {
+  const result =  tokenizedPostcondition.reduce((acc, token) => {
     // Replace all tokens equivalent to 'left' string with 'right' string
     if (replaceableTypes.includes(token.type) && token.value === left) {
       return acc.concat('(', right, ')');
     }
     return acc.concat(token.value);
   }, '');
+
+  return prefixArrays(result)
 }
 
 export function conditionalTransform(
@@ -37,22 +39,25 @@ export function arrayStoreTransform(
   assignment: string
 ): string {
   const arrayMatcher = new RegExp(
-    `(${arrayId})\\s*((?:\\{\\s*\\w+\\s*<\\-\\s*\\w+\\s*\\})*)\\s*\\[\\s*(\\w+)\\s*\\]`,
+    `(\\!${arrayId})\\s*((?:\\{\\s*\\w+\\s*<\\-\\s*\\w+\\s*\\})*)\\s*(\\[\\s*\\w+\\s*\\])?`,
     'g'
   );
 
+  let result = postcondition;
+
   if (arrayMatcher.test(postcondition)) {
-    return postcondition.replace(arrayMatcher, `$1$2{${argId}<-${assignment}}[$3]`);
+    result = postcondition.replace(arrayMatcher, `$1$2{${argId}<-${assignment}}$3`);
   }
 
-  return postcondition;
+  return prefixArrays(result);
 }
 
-export function prefixArrays(str: string) {
+function prefixArrays(str: string) {
+  let result = str;
   const arrayMatcher = /(?<!\!)(\w+)(?=\s*(?:\{.*?\})*\s*\[.*?\])/g;
   if (arrayMatcher.test(str)) {
-    return str.replace(arrayMatcher, '!$1');
+    result = str.replace(arrayMatcher, '!$1');
   }
 
-  return str;
+  return result;
 }

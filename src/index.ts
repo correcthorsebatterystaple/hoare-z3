@@ -6,8 +6,8 @@ import {
 } from './getVerificationConditions';
 import { generateSmtText } from './smtGenerator';
 import ts from 'typescript';
-import { prefixArrays } from './hoareTransformers';
 import { isValidParse } from './parser';
+import path from 'path';
 
 let args = require('minimist')(process.argv.slice(2));
 export const OPTS = {
@@ -15,6 +15,7 @@ export const OPTS = {
   output: args.o || args.output || false,
   annotate: args.a || args.annotate || false,
 };
+
 export const printer = ts.createPrinter({ removeComments: false });
 
 const sourceText = readFileSync(OPTS.filename, 'utf-8');
@@ -33,11 +34,8 @@ if (!isValidParse(postcondition)) {
   throw new Error('Invalid postcondition');
 }
 
-const verificationConditions = getVerificationConditions(func.body, precondition, postcondition, sourceFile).map((v) =>
-  prefixArrays(v)
-);
+const verificationConditions = getVerificationConditions(func.body, precondition, postcondition, sourceFile);
 
-// console.log(verificationConditions);
 const smtText = generateSmtText(verificationConditions);
 
 if (OPTS.output) {
@@ -48,7 +46,8 @@ if (OPTS.output) {
 }
 
 if (OPTS.annotate) {
-  writeFileSync(`${OPTS.filename}.annotated.ts`, printer.printFile(sourceFile));
+  const {name: filename} = path.parse(OPTS.filename);
+  writeFileSync(`${filename}.annotated.ts`, printer.printFile(sourceFile));
   console.log('-----------------ANNOTATED----------------');
   console.log(printer.printFile(sourceFile));
 }

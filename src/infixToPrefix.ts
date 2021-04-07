@@ -3,7 +3,7 @@ import * as nearley from 'nearley';
 import { ParserNodeType } from './enums/ParserNodeType';
 import { LexerToken } from './interfaces/LexerToken';
 
-const TERMINAL_TYPES = [ParserNodeType.Id, ParserNodeType.Integer, ParserNodeType.IdAux, ParserNodeType.ReturnId];
+const TERMINAL_TYPES = [ParserNodeType.Id, ParserNodeType.Integer, ParserNodeType.IdAux, ParserNodeType.ReturnId, ParserNodeType.ArrayId, ParserNodeType.ArrayIdAux];
 const BINARY_OP_TYPES = [ParserNodeType.BoolBinaryOp, ParserNodeType.MathOp, ParserNodeType.RelExp];
 const UNARY_OP_TYPES = [ParserNodeType.BoolUnaryOp];
 

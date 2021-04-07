@@ -11,4 +11,6 @@ export enum ParserNodeType {
   FunctionCall = 'function_call',
   ReturnId = 'return_id',
   Array = 'array',
+  ArrayId = 'array_id',
+  ArrayIdAux = 'array_id_aux',
 }

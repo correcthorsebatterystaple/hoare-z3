@@ -1,6 +1,5 @@
 import ts = require('typescript');
-import { printer } from '.';
-import { arrayStoreTransform, assignmentTransform, conditionalTransform, prefixArrays } from './hoareTransformers';
+import { arrayStoreTransform, assignmentTransform, conditionalTransform } from './hoareTransformers';
 
 let loopConditions: string[] = [];
 
@@ -17,7 +16,6 @@ export function getVerificationConditions(
   postcondition: string,
   source: ts.SourceFile
 ): string[] {
-  console.log(postcondition);
   loopConditions = [];
 
   const conditions: string[] = [];
@@ -25,7 +23,7 @@ export function getVerificationConditions(
   const weakestPrecondition = getWeakestPrecondition(node, postcondition, source);
 
   // precondition implies weakest precondition
-  const c1 = `(${precondition}) => (${prefixArrays(weakestPrecondition)})`;
+  const c1 = `(${precondition}) => (${weakestPrecondition})`;
   // add loop conditions for all loops
   conditions.push(c1, ...loopConditions);
 
@@ -33,14 +31,15 @@ export function getVerificationConditions(
 }
 
 function getWeakestPrecondition(node: ts.Node, _postcondition: string, sourceFile: ts.SourceFile, depth = 0): string {
-  const postcondition = prefixArrays(_postcondition);
+  const postcondition = _postcondition;
   if (!node) return undefined;
   // block statement
   if (ts.isBlock(node)) {
     // iterate through all the statements  in reverse and derive the weakest precondition for the block
     return node.statements.reduceRight((acc, statement) => {
       const weakestPrecondition = getWeakestPrecondition(statement, acc, sourceFile, depth + 1);
-      addLeadingAnnotation(statement, prefixArrays(weakestPrecondition));
+      addLeadingAnnotation(statement, weakestPrecondition);
+      console.log(weakestPrecondition);
       return weakestPrecondition;
     }, postcondition);
   }
