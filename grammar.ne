@@ -22,6 +22,7 @@ const lexer = moo.compile({
     left_replace_bracket: '{',
     right_replace_bracket: '}',
     array_id: /![a-zA-Z]/,
+    array_id_aux: /!_[a-zA-Z]_/,
     id: /[a-zA-Z]+/,
     id_aux: {match: /_[a-zA-Z]+_/},
     integer: /\d+/,
@@ -56,7 +57,8 @@ bool_term
 # Relational expression that compares two math expressions
 rel_exp 
     -> math_exp (_ %rel_op _) math_exp {% d => ({type: 'rel_exp', value: d[1][1], left: d[0], right: d[2]})%}
-    | %id {% id %}
+    |  (%array_id | %array_id_aux) store_term:? (_ "=" _) (%array_id | %array_id_aux) store_term:? {% d => ({type: 'rel_exp', value: d[2][1], left: d[0][0], right: d[3][0]})%}
+    |  %id {% id %}
 # Math exprssion
 math_exp -> mod_term {% id %}
 
