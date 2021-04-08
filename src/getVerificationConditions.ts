@@ -23,9 +23,9 @@ export function getVerificationConditions(
   const weakestPrecondition = getWeakestPrecondition(node, postcondition, source);
 
   // precondition implies weakest precondition
-  const c1 = `(${precondition}) => (${weakestPrecondition})`;
+  const implication = `(${precondition}) => (${weakestPrecondition})`;
   // add loop conditions for all loops
-  conditions.push(c1, ...loopConditions);
+  conditions.push(precondition, implication, ...loopConditions);
 
   return conditions;
 }
