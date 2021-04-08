@@ -7,4 +7,4 @@ function sum(n: number) {
     i = i+1;
     j = j+i;
   }
-}//? j = (x*(x+1))//2
+}//? j = (_X_*(_X_+1))//2
