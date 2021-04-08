@@ -3,3 +3,4 @@ node_modules
 *.smt2
 .vscode
 !util.smt
+*.annotated.ts
