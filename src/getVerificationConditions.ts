@@ -25,7 +25,7 @@ export function getVerificationConditions(
   // precondition implies weakest precondition
   const implication = `(${precondition}) => (${weakestPrecondition})`;
   // add loop conditions for all loops
-  conditions.push(precondition, implication, ...loopConditions);
+  conditions.push(implication, ...loopConditions);
 
   return conditions;
 }
@@ -39,7 +39,6 @@ function getWeakestPrecondition(node: ts.Node, _postcondition: string, sourceFil
     return node.statements.reduceRight((acc, statement) => {
       const weakestPrecondition = getWeakestPrecondition(statement, acc, sourceFile, depth + 1);
       addLeadingAnnotation(statement, weakestPrecondition);
-      console.log(weakestPrecondition);
       return weakestPrecondition;
     }, postcondition);
   }
