@@ -3,7 +3,7 @@ import { ParserNodeType } from './enums/ParserNodeType';
 import { tokenize } from './tokenizer';
 
 export function assignmentTransform(postcondition: string, left: string, right: string): string {
-  const replaceableTypes: string[] = [ParserNodeType.Id, ParserNodeType.ReturnId];
+  const replaceableTypes: string[] = [LexerTokenType.Id, LexerTokenType.ReturnId];
   const tokenizedPostcondition = tokenize(postcondition);
   const result =  tokenizedPostcondition.reduce((acc, token) => {
     // Replace all tokens equivalent to 'left' string with 'right' string

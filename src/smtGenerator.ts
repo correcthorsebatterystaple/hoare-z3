@@ -1,3 +1,4 @@
+import { LexerTokenType } from './enums/LexerTokenType';
 import { ParserNodeType } from './enums/ParserNodeType';
 import { infixToSmtPrefix } from './infixToPrefix';
 import { tokenize } from './tokenizer';
@@ -25,13 +26,13 @@ export function generateSmtText(conditions: string[]): string {
 function generateDeclareStatements(str: string): string {
   const tokenizedStr = tokenize(str);
   const declareStatements = new Set<string>();
-  const declarableTypes: string[] = [ParserNodeType.Id, ParserNodeType.IdAux, ParserNodeType.ReturnId];
+  const declarableTypes: string[] = [LexerTokenType.Id, LexerTokenType.IdAux, LexerTokenType.ReturnId];
 
   for (const token of tokenizedStr) {
     if (declarableTypes.includes(token.type)) {
       declareStatements.add(`(declare-const ${token.value} Int)`);
     }
-    if (token.type === ParserNodeType.ArrayId || token.type === ParserNodeType.ArrayIdAux) {
+    if (token.type === LexerTokenType.ArrayId || token.type === LexerTokenType.ArrayIdAux) {
       declareStatements.add(`(declare-const ${token.value} (Array Int Int))`)
     }
   }
