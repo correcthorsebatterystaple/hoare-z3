@@ -1,7 +1,4 @@
 export enum ParserNodeType {
-  Id = 'id',
-  IdAux = 'id_aux',
-  Integer = 'integer',
   RelOp = 'rel_op',
   BoolBinaryOp = 'bool_bin_op',
   RelExp = 'rel_exp',
@@ -9,8 +6,6 @@ export enum ParserNodeType {
   BoolUnaryOp = 'bool_un_op',
   Root = 'root',
   FunctionCall = 'function_call',
-  ReturnId = 'return_id',
+  ArraySelection = 'array_selection',
   Array = 'array',
-  ArrayId = 'array_id',
-  ArrayIdAux = 'array_id_aux',
 }

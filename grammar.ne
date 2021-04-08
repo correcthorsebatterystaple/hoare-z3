@@ -57,7 +57,8 @@ bool_term
 # Relational expression that compares two math expressions
 rel_exp 
     -> math_exp (_ %rel_op _) math_exp {% d => ({type: 'rel_exp', value: d[1][1], left: d[0], right: d[2]})%}
-    |  (%array_id | %array_id_aux) store_term:? (_ "=" _) (%array_id | %array_id_aux) store_term:? {% d => ({type: 'rel_exp', value: d[2][1], left: d[0][0], right: d[3][0]})%}
+    |  array_term (_ "=" _) array_term  
+        {% d => ({type: 'rel_exp', value: d[1][1], left: d[0], right: d[2]})%}
     |  %id {% id %}
 # Math exprssion
 math_exp -> mod_term {% id %}
@@ -79,12 +80,15 @@ arg_list
     -> arg_list (_ "," _) mod_term {% d => [...d[0], d[2]]%}
     |  mod_term # should return a single element array
 term
-    -> (%id | %integer | %id_aux | %return_id | array_term) {% d => d[0][0] %}
+    -> (%id | %integer | %id_aux | %return_id | array_selection) {% d => d[0][0] %}
+array_selection
+    -> array_term (_ %left_array_bracket _) mod_term (_ %right_array_bracket)
+        {% d => ({type: 'array_selection', value: d[0], arg: d[2]})%}
 array_term
-    -> (%array_id | %return_id) (_ %left_array_bracket _) mod_term (_ %right_array_bracket) {% d => ({type: 'array', value: d[0][0], arg: d[2]})%}
-    |  (%array_id | %return_id) store_term (_ %left_array_bracket _) mod_term (_ %right_array_bracket) {% d => ({type: 'array', value: d[0][0], arg: d[3], replace: d[1]})%}
-store_term
-    -> store_term (_ "{" _) mod_term (_ %replace_op _) mod_term (_ "}" _) {% d => [...d[0], [d[2],d[4]]]%}
+    -> (%array_id | %array_id_aux) array_store_term:?
+        {% d => ({type: 'array', value: d[0][0], store: d[1]})%}
+array_store_term
+    -> array_store_term (_ "{" _) mod_term (_ %replace_op _) mod_term (_ "}" _) {% d => [...d[0], [d[2],d[4]]]%}
     |  (_ "{" _) mod_term (_ %replace_op _) mod_term (_ "}" _) {% d => [[d[1],d[3]]]%}
 _ -> %ws:* # optional whitespace
 __ -> %ws:+ # mandatory whitespace

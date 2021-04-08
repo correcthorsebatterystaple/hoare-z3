@@ -2,8 +2,16 @@ import * as grammar from './grammar';
 import * as nearley from 'nearley';
 import { ParserNodeType } from './enums/ParserNodeType';
 import { LexerToken } from './interfaces/LexerToken';
+import { LexerTokenType } from './enums/LexerTokenType';
 
-const TERMINAL_TYPES = [ParserNodeType.Id, ParserNodeType.Integer, ParserNodeType.IdAux, ParserNodeType.ReturnId, ParserNodeType.ArrayId, ParserNodeType.ArrayIdAux];
+const TERMINAL_TYPES = [
+  LexerTokenType.Id,
+  LexerTokenType.Integer,
+  LexerTokenType.IdAux,
+  LexerTokenType.ReturnId,
+  LexerTokenType.ArrayId,
+  LexerTokenType.ArrayIdAux,
+];
 const BINARY_OP_TYPES = [ParserNodeType.BoolBinaryOp, ParserNodeType.MathOp, ParserNodeType.RelExp];
 const UNARY_OP_TYPES = [ParserNodeType.BoolUnaryOp];
 
@@ -35,13 +43,17 @@ interface FunctionNode extends ParserNode {
   args: string[];
 }
 
-interface ArrayNode extends ParserNode {
-  value: LexerToken;
+interface ArraySelectionNode extends ParserNode {
+  value: ArrayNode;
   arg: ParserNode;
-  replace?: ParserNode[][];
 }
 
-function isNodeType<T extends ParserNode>(node: ParserNode, ...types: ParserNodeType[]): node is T {
+interface ArrayNode extends ParserNode {
+  value: LexerToken;
+  store?: ParserNode[][];
+}
+
+function isNodeType<T extends ParserNode>(node: ParserNode, ...types: string[]): node is T {
   return types.length && types.includes(node.type);
 }
 
@@ -85,22 +97,26 @@ export function infixToSmtPrefix(node: ParserNode | string): string {
 
   // function call
   if (isNodeType<FunctionNode>(node, ParserNodeType.FunctionCall)) {
-    return `(${node.value} ${node.args.map(arg => infixToSmtPrefix(arg)).join(' ')})`;
+    return `(${node.value} ${node.args.map((arg) => infixToSmtPrefix(arg)).join(' ')})`;
   }
 
-  // arrays
+  // array selection
+  if (isNodeType<ArraySelectionNode>(node, ParserNodeType.ArraySelection)) {
+    return `(select ${infixToSmtPrefix(node.value)} ${infixToSmtPrefix(node.arg)})`;
+  }
+
+  // array
   if (isNodeType<ArrayNode>(node, ParserNodeType.Array)) {
-    if (!node.replace?.length) {
-      return `(select ${node.value} ${infixToSmtPrefix(node.arg)})`;
+    if (!node.store?.length) {
+      return node.value.toString();
     }
 
-    const storeArray = node.replace.reduce((acc, curr) => {
+    const storeArray = node.store.reduce((acc, curr) => {
       const [storeIdx, storeVal] = curr;
       return `(store ${acc} ${infixToSmtPrefix(storeIdx)} ${infixToSmtPrefix(storeVal)})`;
     }, node.value.toString());
-
-    return `(select ${storeArray} ${infixToSmtPrefix(node.arg)})`;
+    return storeArray;
   }
 
-  throw new Error('INVALID-NODE-TYPE');
+  throw new Error(`INVALID-NODE-TYPE: ${node.type}`);
 }

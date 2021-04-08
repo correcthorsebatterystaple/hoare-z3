@@ -19,6 +19,7 @@ export enum LexerTokenType {
   LeftReplaceBracket = 'left_replace_bracket',
   RightReplaceBracket = 'right_replace_bracket',
   ArrayId = 'array_id',
+  ArrayIdAux = 'array_id_aux',
   Id = 'id',
   IdAux = 'id_aux',
   Integer = 'integer',
