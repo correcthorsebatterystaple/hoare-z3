@@ -1,4 +1,4 @@
-import ts = require('typescript');
+import ts from 'typescript';
 import { arrayStoreTransform, assignmentTransform, conditionalTransform } from './hoareTransformers';
 
 let loopConditions: string[] = [];
@@ -111,14 +111,14 @@ function getWeakestPrecondition(node: ts.Node, _postcondition: string, sourceFil
   // While statement
   if (ts.isWhileStatement(node) && ts.isBinaryExpression(node.expression)) {
     const invariant = getPreAnnotiationFromNode(node, sourceFile);
-    const condition = node.expression.getFullText(sourceFile);
-    const invariantWeakestPrecondition = getWeakestPrecondition(node.statement, invariant, sourceFile, depth + 1);
-    loopConditions.push(
-      // invariant and condition => invariant
-      `((${invariant}) AND (${condition})) => (${invariantWeakestPrecondition})`,
-      // invariant and not(condition) => postcondition
-      `((${invariant}) AND NOT(${condition})) => (${postcondition})`
-    );
+    // const condition = node.expression.getFullText(sourceFile);
+    // const invariantWeakestPrecondition = getWeakestPrecondition(node.statement, invariant, sourceFile, depth + 1);
+    // loopConditions.push(
+    //   // invariant and condition => invariant
+    //   `((${invariant}) AND (${condition})) => (${invariantWeakestPrecondition})`,
+    //   // invariant and not(condition) => postcondition
+    //   `((${invariant}) AND NOT(${condition})) => (${postcondition})`
+    // );
     return invariant;
   }
 
@@ -140,14 +140,14 @@ export function getPreAnnotiationFromNode(node: ts.Node, sourceFile: ts.SourceFi
   const srcText = sourceFile.getFullText();
   const commentRanges = ts.getLeadingCommentRanges(srcText, node.getFullStart());
   if (!commentRanges?.length) {
-    throwAnnotationMissingError(node, sourceFile)
+    throwAnnotationMissingError(node, sourceFile);
   }
   const [firstCommentRange] = commentRanges;
 
   const comment = srcText.slice(firstCommentRange.pos, firstCommentRange.end);
 
   if (!comment.startsWith('//? ')) {
-    throwAnnotationMissingError(node, sourceFile)
+    throwAnnotationMissingError(node, sourceFile);
   }
 
   return comment.slice(3).trim();
@@ -161,15 +161,15 @@ export function getPreAnnotiationFromNode(node: ts.Node, sourceFile: ts.SourceFi
 export function getPostAnnotationFromNode(node: ts.Node, sourceFile: ts.SourceFile): string {
   const commentRanges = ts.getTrailingCommentRanges(sourceFile.getFullText(), node.end);
   if (!commentRanges?.length) {
-    throwAnnotationMissingError(node, sourceFile)
+    throwAnnotationMissingError(node, sourceFile);
   }
   const [firstCommentRange] = commentRanges;
   const comment = sourceFile.getFullText().slice(firstCommentRange.pos, firstCommentRange.end);
 
   if (!comment.startsWith('//?')) {
-    throwAnnotationMissingError(node, sourceFile)
+    throwAnnotationMissingError(node, sourceFile);
   }
-  
+
   return comment.slice(3).trim();
 }
 
@@ -181,4 +181,110 @@ function addLeadingAnnotation(node: ts.Node, annotation: string): ts.Node {
 function throwAnnotationMissingError(node: ts.Node, sourceFile: ts.SourceFile) {
   const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getFullStart());
   throw new Error(`Expected annotation at ${line + 1}:${character + 1} ${sourceFile.fileName}`);
+}
+
+export function _getVerificationConditions(
+  node: ts.Block,
+  precondition: string,
+  postcondition: string,
+  sourceFile: ts.SourceFile
+): string[] {
+  if (!node.statements.length) {
+    return [`((${precondition}) => (${postcondition}))`];
+  }
+
+  const lastStatement = node.statements[node.statements.length - 1];
+  const blockWithoutLastStatement = ts.factory.createBlock(node.statements.slice(0, -1));
+
+  // Assignment
+  if (
+    ts.isExpressionStatement(lastStatement) &&
+    ts.isBinaryExpression(lastStatement.expression) &&
+    lastStatement.expression.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+    ts.isIdentifier(lastStatement.expression.left)
+  ) {
+    const newPostcondition = assignmentTransform(
+      postcondition,
+      lastStatement.expression.left.text,
+      lastStatement.expression.right.getText(sourceFile)
+    );
+    return [..._getVerificationConditions(blockWithoutLastStatement, precondition, newPostcondition, sourceFile)];
+  }
+
+  // Declaration
+  if (ts.isVariableStatement(lastStatement)) {
+    const declaration = lastStatement.declarationList.declarations[0];
+
+    const newPostcondition = assignmentTransform(
+      postcondition,
+      declaration.name.getText(sourceFile),
+      declaration.initializer.getText(sourceFile)
+    );
+
+    return [..._getVerificationConditions(blockWithoutLastStatement, precondition, newPostcondition, sourceFile)];
+  }
+
+  // Conditional
+  if (ts.isIfStatement(lastStatement) && ts.isBinaryExpression(lastStatement.expression)) {
+    const thenBlock = stmtToBlock(lastStatement.thenStatement);
+    const elseBlock = stmtToBlock(lastStatement.elseStatement);
+
+    const expression = lastStatement.expression.getText(sourceFile);
+
+    const thenPre = `((${precondition}) AND (${expression}))`;
+    const thenVC = _getVerificationConditions(thenBlock, thenPre, postcondition, sourceFile);
+
+    const weakestPrecondition = getWeakestPrecondition(lastStatement, postcondition, sourceFile);
+    const blockWithoutLastStatementVC = _getVerificationConditions(
+      blockWithoutLastStatement,
+      precondition,
+      weakestPrecondition,
+      sourceFile
+    );
+    
+    const VC = [...blockWithoutLastStatementVC, ...thenVC];
+
+    if (elseBlock) {
+      const elsePre = `((${precondition}) AND NOT (${expression}))`;
+      const elseVC = _getVerificationConditions(elseBlock, elsePre, postcondition, sourceFile);
+
+      return VC.concat(elseVC);
+    }
+
+    return VC;
+  }
+
+  // While
+  if (ts.isWhileStatement(lastStatement) && ts.isBinaryExpression(lastStatement.expression)) {
+    const invariant = getPreAnnotiationFromNode(lastStatement, sourceFile);
+    const condition = lastStatement.expression.getFullText(sourceFile);
+
+    const whileBlock = stmtToBlock(lastStatement.statement);
+
+    return [
+      // Conditions for preceeding statements
+      ..._getVerificationConditions(blockWithoutLastStatement, precondition, invariant, sourceFile),
+      // Conditions for invariant validity
+      ..._getVerificationConditions(whileBlock, `((${invariant}) AND (${condition}))`, invariant, sourceFile),
+      // Conditions for postcondition strengthening
+      `(((${invariant}) AND NOT (${condition})) => (${postcondition}))`,
+    ];
+  }
+
+  // Return
+  if (ts.isReturnStatement(lastStatement)) {
+    const newPostcondition = assignmentTransform(postcondition, '$ret', lastStatement.expression.getText(sourceFile));
+    return [..._getVerificationConditions(blockWithoutLastStatement, precondition, newPostcondition, sourceFile)];
+  }
+
+  throw new Error(`Cannot recognise node: ${lastStatement.getText(sourceFile)}`);
+}
+
+function stmtToBlock(stmt: ts.Statement | ts.Block): ts.Block {
+  if (!stmt) return undefined;
+  if (ts.isBlock(stmt)) {
+    return stmt;
+  }
+
+  return ts.factory.createBlock([stmt]);
 }
