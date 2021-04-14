@@ -111,14 +111,6 @@ function getWeakestPrecondition(node: ts.Node, _postcondition: string, sourceFil
   // While statement
   if (ts.isWhileStatement(node) && ts.isBinaryExpression(node.expression)) {
     const invariant = getPreAnnotiationFromNode(node, sourceFile);
-    // const condition = node.expression.getFullText(sourceFile);
-    // const invariantWeakestPrecondition = getWeakestPrecondition(node.statement, invariant, sourceFile, depth + 1);
-    // loopConditions.push(
-    //   // invariant and condition => invariant
-    //   `((${invariant}) AND (${condition})) => (${invariantWeakestPrecondition})`,
-    //   // invariant and not(condition) => postcondition
-    //   `((${invariant}) AND NOT(${condition})) => (${postcondition})`
-    // );
     return invariant;
   }
 
