@@ -92,6 +92,9 @@ export function infixToSmtPrefix(node: ParserNode | string): string {
     if (node.value.value === '%') {
       return `(mod ${infixToSmtPrefix(node.left)} ${infixToSmtPrefix(node.right)})`;
     }
+    if (['==', '==='].includes(node.value.value)) {
+      return `(= ${infixToSmtPrefix(node.left)} ${infixToSmtPrefix(node.right)})`;
+    }
     return `(${node.value} ${infixToSmtPrefix(node.left)} ${infixToSmtPrefix(node.right)})`;
   }
 
