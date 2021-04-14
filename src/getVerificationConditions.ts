@@ -216,6 +216,21 @@ export function _getVerificationConditions(
     return [..._getVerificationConditions(blockWithoutLastStatement, precondition, newPostcondition, sourceFile)];
   }
 
+  // Array assignment
+  if (
+    ts.isExpressionStatement(lastStatement) &&
+    ts.isBinaryExpression(lastStatement.expression) &&
+    ts.isElementAccessExpression(lastStatement.expression.left)
+  ) {
+    const arrayIdentifier = lastStatement.expression.left.expression.getText(sourceFile);
+    const arrayArgIdentifier = lastStatement.expression.left.argumentExpression.getText(sourceFile);
+    const assignedValue = lastStatement.expression.right.getText(sourceFile);
+
+    const newPostcondition = arrayStoreTransform(postcondition, arrayIdentifier, arrayArgIdentifier, assignedValue);
+
+    return [..._getVerificationConditions(blockWithoutLastStatement, precondition, newPostcondition, sourceFile)];
+  }
+
   // Conditional
   if (ts.isIfStatement(lastStatement) && ts.isBinaryExpression(lastStatement.expression)) {
     const thenBlock = stmtToBlock(lastStatement.thenStatement);
@@ -233,7 +248,7 @@ export function _getVerificationConditions(
       weakestPrecondition,
       sourceFile
     );
-    
+
     const VC = [...blockWithoutLastStatementVC, ...thenVC];
 
     if (elseBlock) {
