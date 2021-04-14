@@ -3,6 +3,7 @@ import {
   getPostAnnotationFromNode,
   getPreAnnotiationFromNode,
   getVerificationConditions,
+  _getVerificationConditions,
 } from './getVerificationConditions';
 import { generateSmtText } from './smtGenerator';
 import ts from 'typescript';
@@ -16,7 +17,7 @@ export const OPTS = {
   annotate: args.a || args.annotate || false,
 };
 
-export const printer = ts.createPrinter({ removeComments: false });
+const printer = ts.createPrinter({ removeComments: false });
 
 const sourceText = readFileSync(OPTS.filename, 'utf-8');
 
@@ -34,9 +35,12 @@ if (!isValidParse(postcondition)) {
   throw new Error('Invalid postcondition');
 }
 
-const verificationConditions = getVerificationConditions(func.body, precondition, postcondition, sourceFile);
+// _getVerificationConditions(func.body, precondition, postcondition, sourceFile).forEach(x => console.log(x));
+// process.exit();
+// const verificationConditions = getVerificationConditions(func.body, precondition, postcondition, sourceFile);
+const verificationConditions = _getVerificationConditions(func.body, precondition, postcondition, sourceFile);
 
-const smtText = generateSmtText(verificationConditions);
+const smtText = generateSmtText(verificationConditions, [precondition]);
 
 if (OPTS.output) {
   writeFileSync(OPTS.output, smtText);
@@ -51,3 +55,12 @@ if (OPTS.annotate) {
   console.log('-----------------ANNOTATED----------------');
   console.log(printer.printFile(sourceFile));
 }
+
+function hasAuxVariables(node: ts.Node, sourceFile: ts.SourceFile): boolean {
+  return false;
+}
+
+function hasLoops(block: ts.Block) {
+  block
+}
+
