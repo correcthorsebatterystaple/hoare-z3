@@ -4,21 +4,35 @@
             "name": "Current TS Sample File",
             "type": "node",
             "request": "launch",
-            "args": ["./src/index.ts", "${relativeFile}"],
+            "args": ["./src/index.ts", "./sample-programs/${input:sample}.ts"],
             "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-        "protocol": "inspector"
+            "protocol": "inspector"
         },
         {
             "name": "Current TS File",
             "type": "node",
             "request": "launch",
-            "args": ["${relativeFile}"],
+            "args": ["${input:filename}"],
             "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
             "protocol": "inspector"
         }
-    ]
+    ],
+     "inputs": [
+         {
+             "id": "sample",
+             "type": "promptString",
+             "description": "File name of the sample program",
+             "default": "arraySwap"
+         },
+         {
+            "id": "filename",
+            "type": "promptString",
+            "description": "Name of file to be run",
+            "default": "test.ts"
+        }
+     ]
 }
