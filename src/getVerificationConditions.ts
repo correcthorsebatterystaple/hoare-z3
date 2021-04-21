@@ -1,36 +1,12 @@
 import ts from 'typescript';
 import { arrayStoreTransform, assignmentTransform, conditionalTransform } from './hoareTransformers';
 
-let loopConditions: string[] = [];
-
-/**
- * Given the node it returns a set of verification conditions that confirm the correctness of the code
- * @param node TS Node for which the verification conditions are generated
- * @param precondition Boolean statement true before node
- * @param postcondition Boolean statement true after node
- * @param source Source text of the code
- */
-export function getVerificationConditions(
+export function getWeakestPrecondition(
   node: ts.Node,
-  precondition: string,
-  postcondition: string,
-  source: ts.SourceFile
-): string[] {
-  loopConditions = [];
-
-  const conditions: string[] = [];
-
-  const weakestPrecondition = getWeakestPrecondition(node, postcondition, source);
-
-  // precondition implies weakest precondition
-  const implication = `(${precondition}) => (${weakestPrecondition})`;
-  // add loop conditions for all loops
-  conditions.push(implication, ...loopConditions);
-
-  return conditions;
-}
-
-function getWeakestPrecondition(node: ts.Node, _postcondition: string, sourceFile: ts.SourceFile, depth = 0): string {
+  _postcondition: string,
+  sourceFile: ts.SourceFile,
+  depth = 0
+): string {
   const postcondition = _postcondition;
   if (!node) return undefined;
   // block statement
@@ -54,7 +30,7 @@ function getWeakestPrecondition(node: ts.Node, _postcondition: string, sourceFil
     const assignmentPrecondition = assignmentTransform(
       postcondition,
       node.expression.left.text,
-      node.expression.right.getText(sourceFile)
+      node.expression.right.getText()
     );
 
     return assignmentPrecondition;
@@ -70,8 +46,8 @@ function getWeakestPrecondition(node: ts.Node, _postcondition: string, sourceFil
 
     const assignmentPrecondition = assignmentTransform(
       postcondition,
-      declaration.name.getText(sourceFile),
-      declaration.initializer.getText(sourceFile)
+      declaration.name.getText(),
+      declaration.initializer.getText()
     );
 
     return assignmentPrecondition;
@@ -83,9 +59,9 @@ function getWeakestPrecondition(node: ts.Node, _postcondition: string, sourceFil
     ts.isBinaryExpression(node.expression) &&
     ts.isElementAccessExpression(node.expression.left)
   ) {
-    const arrayIdentifier = node.expression.left.expression.getText(sourceFile);
-    const arrayArgIdentifier = node.expression.left.argumentExpression.getText(sourceFile);
-    const assignedValue = node.expression.right.getText(sourceFile);
+    const arrayIdentifier = node.expression.left.expression.getText();
+    const arrayArgIdentifier = node.expression.left.argumentExpression.getText();
+    const assignedValue = node.expression.right.getText();
 
     const arrayStorePrecondition = arrayStoreTransform(
       postcondition,
@@ -102,7 +78,7 @@ function getWeakestPrecondition(node: ts.Node, _postcondition: string, sourceFil
     let thenPrecondition = getWeakestPrecondition(node.thenStatement, postcondition, sourceFile, depth + 1);
     let elsePrecondition = getWeakestPrecondition(node.elseStatement, postcondition, sourceFile, depth + 1);
 
-    const expressionText = node.expression.getText(sourceFile);
+    const expressionText = node.expression.getText();
     const conditionalPrecondition = conditionalTransform(expressionText, thenPrecondition, elsePrecondition);
 
     return conditionalPrecondition;
@@ -115,7 +91,7 @@ function getWeakestPrecondition(node: ts.Node, _postcondition: string, sourceFil
   }
 
   if (ts.isReturnStatement(node)) {
-    const returnPrecondition = assignmentTransform(postcondition, '$ret', node.expression.getText(sourceFile));
+    const returnPrecondition = assignmentTransform(postcondition, '$ret', node.expression.getText());
 
     return returnPrecondition;
   }
@@ -175,18 +151,40 @@ function throwAnnotationMissingError(node: ts.Node, sourceFile: ts.SourceFile) {
   throw new Error(`Expected annotation at ${line + 1}:${character + 1} ${sourceFile.fileName}`);
 }
 
+function nodeHasLoops(node: ts.Node): boolean {
+  console;
+  const children = [];
+  node.forEachChild((child) => {
+    children.push(child);
+  });
+  return children.reduce<boolean>((acc, child) => {
+    if (acc) {
+      return acc || true;
+    }
+    if (ts.isWhileStatement(child)) {
+      return acc || true;
+    }
+    return nodeHasLoops(child);
+  }, false);
+}
+
 export function _getVerificationConditions(
-  node: ts.Block,
+  block: ts.Block,
   precondition: string,
   postcondition: string,
   sourceFile: ts.SourceFile
 ): string[] {
-  if (!node.statements.length) {
+  if (block.statements.length === 0) {
     return [`((${precondition}) => (${postcondition}))`];
   }
 
-  const lastStatement = node.statements[node.statements.length - 1];
-  const blockWithoutLastStatement = ts.factory.createBlock(node.statements.slice(0, -1));
+  if (!nodeHasLoops(block)) {
+    const weakestPrecondition = getWeakestPrecondition(block, postcondition, sourceFile);
+    return [`((${precondition}) => (${weakestPrecondition}))`];
+  }
+
+  const lastStatement = block.statements[block.statements.length - 1];
+  const blockWithoutLastStatement = ts.factory.createBlock(block.statements.slice(0, -1));
 
   // Assignment
   if (
@@ -198,7 +196,7 @@ export function _getVerificationConditions(
     const newPostcondition = assignmentTransform(
       postcondition,
       lastStatement.expression.left.text,
-      lastStatement.expression.right.getText(sourceFile)
+      lastStatement.expression.right.getText()
     );
     return [..._getVerificationConditions(blockWithoutLastStatement, precondition, newPostcondition, sourceFile)];
   }
@@ -209,8 +207,8 @@ export function _getVerificationConditions(
 
     const newPostcondition = assignmentTransform(
       postcondition,
-      declaration.name.getText(sourceFile),
-      declaration.initializer.getText(sourceFile)
+      declaration.name.getText(),
+      declaration.initializer.getText()
     );
 
     return [..._getVerificationConditions(blockWithoutLastStatement, precondition, newPostcondition, sourceFile)];
@@ -222,9 +220,9 @@ export function _getVerificationConditions(
     ts.isBinaryExpression(lastStatement.expression) &&
     ts.isElementAccessExpression(lastStatement.expression.left)
   ) {
-    const arrayIdentifier = lastStatement.expression.left.expression.getText(sourceFile);
-    const arrayArgIdentifier = lastStatement.expression.left.argumentExpression.getText(sourceFile);
-    const assignedValue = lastStatement.expression.right.getText(sourceFile);
+    const arrayIdentifier = lastStatement.expression.left.expression.getText();
+    const arrayArgIdentifier = lastStatement.expression.left.argumentExpression.getText();
+    const assignedValue = lastStatement.expression.right.getText();
 
     const newPostcondition = arrayStoreTransform(postcondition, arrayIdentifier, arrayArgIdentifier, assignedValue);
 
@@ -236,7 +234,7 @@ export function _getVerificationConditions(
     const thenBlock = stmtToBlock(lastStatement.thenStatement);
     const elseBlock = stmtToBlock(lastStatement.elseStatement);
 
-    const expression = lastStatement.expression.getText(sourceFile);
+    const expression = lastStatement.expression.getText();
 
     const thenPre = `((${precondition}) AND (${expression}))`;
     const thenVC = _getVerificationConditions(thenBlock, thenPre, postcondition, sourceFile);
@@ -280,11 +278,11 @@ export function _getVerificationConditions(
 
   // Return
   if (ts.isReturnStatement(lastStatement)) {
-    const newPostcondition = assignmentTransform(postcondition, '$ret', lastStatement.expression.getText(sourceFile));
+    const newPostcondition = assignmentTransform(postcondition, '$ret', lastStatement.expression.getText());
     return [..._getVerificationConditions(blockWithoutLastStatement, precondition, newPostcondition, sourceFile)];
   }
 
-  throw new Error(`Cannot recognise node: ${lastStatement.getText(sourceFile)}`);
+  throw new Error(`Cannot recognise node: ${lastStatement.getText()}`);
 }
 
 function stmtToBlock(stmt: ts.Statement | ts.Block): ts.Block {
