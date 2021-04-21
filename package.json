@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "colors": "^1.4.0",
     "minimist": "^1.2.5",
     "moo": "^0.5.1",
     "nearley": "^2.20.1",

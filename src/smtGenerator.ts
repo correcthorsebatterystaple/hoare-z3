@@ -37,7 +37,7 @@ export function generateSmtText(
     .join('\n');
 
   smtText.push(`(set-option :produce-unsat-cores true)`);
-  smtText.push(generateDeclareStatements(verificationConditions).join('\n'));
+  smtText.push(generateDeclareStatements(verificationConditions, functions).join('\n'));
   smtText.push(preconditionAssertStatement);
   smtText.push(assertDefinitions);
   smtText.push(assertConditions);
@@ -46,7 +46,10 @@ export function generateSmtText(
   return smtText.join('\n');
 }
 
-export function generateDeclareStatements(conditions: string[]): string[] {
+export function generateDeclareStatements(
+  conditions: string[],
+  functionDeclarations: ts.FunctionDeclaration[]
+): string[] {
   const intIds = new Set<string>();
   const arrayIds = new Set<string>();
   const functionIds: { [name: string]: number } = {};
@@ -78,6 +81,14 @@ export function generateDeclareStatements(conditions: string[]): string[] {
 
   const intDeclareStatements = [...intIds].map((id) => `(declare-const ${id} Int)`);
   const arrayDeclareStatements = [...arrayIds].map((id) => `(declare-const ${id} (Array Int Int))`);
+
+  const invalidFunctions = Object.keys(functionIds).filter(
+    (name) => !functionDeclarations.some((f) => f.name.text === name && f.parameters.length === functionIds[name])
+  );
+  if (invalidFunctions.length > 0) {
+    throw new Error(`Undeclared functions found in annotations: ${invalidFunctions.map((name) => `${name}(${functionIds[name]})`)}`);
+  }
+
   const functionDeclareStatements = Object.keys(functionIds).map(
     (key) => `(declare-fun ${key} (${Array(functionIds[key]).fill('Int').join(' ')}) Int)`
   );

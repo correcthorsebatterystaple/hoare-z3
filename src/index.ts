@@ -8,8 +8,9 @@ import { generateSmtText } from './smtGenerator';
 import ts from 'typescript';
 import { isValidParse } from './helpers/parserHelpers';
 import path from 'path';
-import { ADDRGETNETWORKPARAMS } from 'dns';
-import { exec, execSync, spawn } from 'child_process';
+import { exec } from 'child_process';
+
+const color = require('colors/safe');
 
 function parseArgs(_args: string[]) {
   let args = require('minimist')(_args);
@@ -113,4 +114,10 @@ function main(..._args: string[]) {
   }
 }
 
-main(...process.argv.slice(2));
+try {
+  main(...process.argv.slice(2));
+} catch (error) {
+  console.log();
+  console.error(color.red(`ERR: ${error.message}`));
+}
+
