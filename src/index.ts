@@ -8,6 +8,8 @@ import { generateSmtText } from './smtGenerator';
 import ts from 'typescript';
 import { isValidParse } from './helpers/parserHelpers';
 import path from 'path';
+import { ADDRGETNETWORKPARAMS } from 'dns';
+import { exec, execSync, spawn } from 'child_process';
 
 function parseArgs(_args: string[]) {
   let args = require('minimist')(_args);
@@ -16,6 +18,8 @@ function parseArgs(_args: string[]) {
     output: args.o || args.output || false,
     annotate: args.a || args.annotate || false,
     conditions: args.c || args.conditions || false,
+    verbose: args.v || args.verbose || false,
+    verify: args.verify || false,
   };
 }
 
@@ -65,28 +69,45 @@ function main(..._args: string[]) {
   }
 
   // get verification conditions
-  const verificationConditions = _getVerificationConditions(firstFunc.body, precondition, postcondition, sourceFile);
-
-  if (OPTS.conditions) {
-    console.log('-----------------ANNOTATED----------------');
-    console.log(verificationConditions.join('\n'));
+  const mainVerificationConditions = _getVerificationConditions(firstFunc.body, precondition, postcondition, sourceFile);
+  if (OPTS.verbose) {
+    console.log('----------------CONDITIONS----------------');
+    console.log(mainVerificationConditions.join('\n'));
   }
 
   // get smt text
-  const smtText = generateSmtText(sourceFile, precondition, verificationConditions, otherFuncs);
+  const smtText = generateSmtText(sourceFile, precondition, mainVerificationConditions, otherFuncs);
 
   // annotate
   if (OPTS.annotate) {
     const { name: filename } = path.parse(OPTS.filename);
     writeFileSync(`${filename}.annotated.ts`, printer.printFile(sourceFile));
-    console.log('-----------------ANNOTATED----------------');
-    console.log(printer.printFile(sourceFile));
   }
 
   // output
   if (OPTS.output) {
     writeFileSync(OPTS.output, smtText);
-  } else {
+  }
+
+  if (OPTS.verify) {
+    const cmd = exec('z3 --in');
+
+    cmd.stdout.on('data', (data) => {
+      if (data.trim() === 'sat') {
+        console.log('invalid');
+      }
+
+      if (data.trim() === 'unsat') {
+        console.log('valid');
+      }
+    });
+    cmd.stdin.write(smtText);
+    cmd.stdin.end();
+  }
+
+  if (OPTS.verbose) {
+    console.log('-----------------ANNOTATED----------------');
+    console.log(printer.printFile(sourceFile));
     console.log('------------------SMTLIB------------------');
     console.log(smtText);
   }
