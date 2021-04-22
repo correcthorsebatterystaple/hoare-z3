@@ -42,6 +42,26 @@ function getAllTopFunctionsFromSource(source: ts.SourceFile): ts.FunctionDeclara
   return source.statements.filter((x) => ts.isFunctionDeclaration(x)) as ts.FunctionDeclaration[];
 }
 
+function validateProgram(sourceFile: ts.SourceFile, filename: string) {
+  const compileErrors = getProgramCompileErrors(filename);
+  if (compileErrors?.length > 0) {
+    throw new Error(compileErrors.join('\n'));
+  }
+
+  let returnStatements = 0;
+  const getReturnStatementCount = (node: ts.Node) => {
+    if (ts.isReturnStatement(node)) {
+      returnStatements++;
+    } else {
+      node.forEachChild((child) => getReturnStatementCount(child));
+    }
+  };
+  getReturnStatementCount(sourceFile);
+  if (returnStatements > 1) {
+    throw new Error(`Max return statements exceeded: ${returnStatements}`);
+  }
+}
+
 function main(..._args: string[]) {
   // parse arguments
   const OPTS = parseArgs(_args);
@@ -51,10 +71,7 @@ function main(..._args: string[]) {
   const sourceText = readFileSync(OPTS.filename, 'utf-8');
   const sourceFile = ts.createSourceFile(OPTS.filename, sourceText, ts.ScriptTarget.Latest, true);
 
-  const compileErrors = getProgramCompileErrors(OPTS.filename);
-  if (compileErrors?.length > 0) {
-    throw new Error(compileErrors.join('\n'));
-  }
+  validateProgram(sourceFile, OPTS.filename);
 
   const [mainFunc, ...otherFuncs] = getAllTopFunctionsFromSource(sourceFile);
 
@@ -70,12 +87,7 @@ function main(..._args: string[]) {
   }
 
   // get verification conditions
-  const mainVerificationConditions = _getVerificationConditions(
-    mainFunc.body,
-    precondition,
-    postcondition,
-    sourceFile
-  );
+  const mainVerificationConditions = _getVerificationConditions(mainFunc.body, precondition, postcondition, sourceFile);
   const otherVerificationConditions = otherFuncs.map((func, i) => {
     const precondition = getPreAnnotiationFromNode(func, sourceFile);
     const postcondition = getPostAnnotationFromNode(func, sourceFile);
