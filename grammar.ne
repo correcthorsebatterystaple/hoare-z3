@@ -4,7 +4,7 @@ const moo = require('moo');
 const lexer = moo.compile({
     implication_op: '=>',
     replace_op: '<-',
-    rel_op: ['>', '>=', '<', '<=', '=', '!='],
+    rel_op: ['>', '>=', '<', '<=', '=', '!=', '==', '==='],
     or_word: {match: ['or', 'OR'], value: s => 'or'},
     and_word: {match:['and', 'AND'], value: s =>'and'},
     not_word: {match:['not', 'NOT'], value: s =>'not'},
@@ -72,6 +72,7 @@ sum_term
     |  mul_term {% id %}
 mul_term 
     -> mul_term (_ (%div_op | %mul_op) _) math_exp {% d => ({type: 'math_op', value: d[1][1], left: d[0], right: d[2]})%}
+    |  %minus_op mod_term {% d => ({type: 'math_op', value: d[0], left: undefined, right: d[1]})%}
     |  "(" mod_term ")" {% d => d[1]%}
     |  function_call {% id %}
     |  term {% id %}

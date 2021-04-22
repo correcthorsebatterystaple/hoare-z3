@@ -44,6 +44,9 @@ export function infixToSmtPrefix(node: ParserNode | string): string {
     if (['==', '==='].includes(node.value.value)) {
       return `(= ${infixToSmtPrefix(node.left)} ${infixToSmtPrefix(node.right)})`;
     }
+    if (node.value.value === '-' && !node.left) {
+      return `(- ${infixToSmtPrefix(node.right)})`;
+    } 
     return `(${node.value} ${infixToSmtPrefix(node.left)} ${infixToSmtPrefix(node.right)})`;
   }
 
