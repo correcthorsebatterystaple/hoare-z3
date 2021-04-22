@@ -21,9 +21,11 @@ export function generateSmtText(
   verificationConditions: string[],
   functions: ts.FunctionDeclaration[] = []
 ): string {
-  const preconditionAssertStatement = generateAssertStatement(infixToSmtPrefix(precondition), { name: 'pre' });
-
   const smtText = [];
+
+  const preconditionAssertStatement = generateAssertStatement(infixToSmtPrefix(precondition), { name: 'pre' }).concat(
+    `; ${precondition}`
+  );
 
   const infixDefinitions = getFunctionDefinitions(functions, sourceFile).map(
     ([quantifiers, definition]) => `(forall ${quantifiers} ${infixToSmtPrefix(definition)})`
@@ -33,13 +35,17 @@ export function generateSmtText(
     .map((x, idx) => generateAssertStatement(x, { name: `def!${idx}` }))
     .join('\n');
   const assertConditions = verificationConditions
-    .map((x, idx) => generateAssertStatement(infixToSmtPrefix(x), { negate: true, name: `veri!${idx}` }))
+    .map((x, idx) =>
+      generateAssertStatement(infixToSmtPrefix(x), { negate: true, name: `veri!${idx}` }).concat(`; ${x}`)
+    )
     .join('\n');
 
   smtText.push(`(set-option :produce-unsat-cores true)`);
   smtText.push(generateDeclareStatements(verificationConditions, functions).join('\n'));
+  smtText.push('; Definitions');
   smtText.push(preconditionAssertStatement);
   smtText.push(assertDefinitions);
+  smtText.push('; Verification conditions');
   smtText.push(assertConditions);
   smtText.push('(check-sat)');
 
@@ -86,7 +92,9 @@ export function generateDeclareStatements(
     (name) => !functionDeclarations.some((f) => f.name.text === name && f.parameters.length === functionIds[name])
   );
   if (invalidFunctions.length > 0) {
-    throw new Error(`Undeclared functions found in annotations: ${invalidFunctions.map((name) => `${name}(${functionIds[name]})`)}`);
+    throw new Error(
+      `Undeclared functions found in annotations: ${invalidFunctions.map((name) => `${name}(${functionIds[name]})`)}`
+    );
   }
 
   const functionDeclareStatements = Object.keys(functionIds).map(

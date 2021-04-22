@@ -9,8 +9,7 @@ import ts from 'typescript';
 import { isValidParse } from './helpers/parserHelpers';
 import path from 'path';
 import { exec } from 'child_process';
-
-const color = require('colors/safe');
+import 'colors';
 
 function parseArgs(_args: string[]) {
   let args = require('minimist')(_args);
@@ -21,6 +20,7 @@ function parseArgs(_args: string[]) {
     conditions: args.c || args.conditions || false,
     verbose: args.v || args.verbose || false,
     verify: args.verify || false,
+    outputAll: args['output-all'] || false,
   };
 }
 
@@ -56,28 +56,64 @@ function main(..._args: string[]) {
     throw new Error(compileErrors.join('\n'));
   }
 
-  const [firstFunc, ...otherFuncs] = getAllTopFunctionsFromSource(sourceFile);
+  const [mainFunc, ...otherFuncs] = getAllTopFunctionsFromSource(sourceFile);
 
   // validate annotations
-  const precondition = getPreAnnotiationFromNode(firstFunc, sourceFile);
+  const precondition = getPreAnnotiationFromNode(mainFunc, sourceFile);
   if (!isValidParse(precondition)) {
     throw new Error('Invalid precondition');
   }
 
-  const postcondition = getPostAnnotationFromNode(firstFunc, sourceFile);
+  const postcondition = getPostAnnotationFromNode(mainFunc, sourceFile);
   if (!isValidParse(postcondition)) {
     throw new Error('Invalid postcondition');
   }
 
   // get verification conditions
-  const mainVerificationConditions = _getVerificationConditions(firstFunc.body, precondition, postcondition, sourceFile);
+  const mainVerificationConditions = _getVerificationConditions(
+    mainFunc.body,
+    precondition,
+    postcondition,
+    sourceFile
+  );
+  const otherVerificationConditions = otherFuncs.map((func, i) => {
+    const precondition = getPreAnnotiationFromNode(func, sourceFile);
+    const postcondition = getPostAnnotationFromNode(func, sourceFile);
+
+    return _getVerificationConditions(func.body, precondition, postcondition, sourceFile);
+  });
+
   if (OPTS.verbose) {
-    console.log('----------------CONDITIONS----------------');
+    console.log('----------------CONDITIONS----------------'.blue);
+    console.log(mainFunc.name.text.green);
     console.log(mainVerificationConditions.join('\n'));
+    otherFuncs.forEach((f, i) => {
+      console.log(f.name.text.green);
+      console.log(otherVerificationConditions[i].join('\n'));
+    });
   }
 
   // get smt text
-  const smtText = generateSmtText(sourceFile, precondition, mainVerificationConditions, otherFuncs);
+  const mainSmtText = generateSmtText(sourceFile, precondition, mainVerificationConditions, otherFuncs);
+  const otherSmtTexts = otherFuncs.map((func, i) => {
+    const precondition = getPreAnnotiationFromNode(func, sourceFile);
+    return generateSmtText(sourceFile, precondition, otherVerificationConditions[i], otherFuncs.slice(i + 1));
+  });
+
+  if (OPTS.verbose) {
+    console.log('-----------------ANNOTATED----------------'.blue);
+    console.log(printer.printFile(sourceFile));
+  }
+
+  if (OPTS.verbose) {
+    console.log('------------------SMTLIB------------------'.blue);
+    console.log(mainFunc.name.text.green);
+    console.log(mainSmtText);
+    otherFuncs.forEach((f, i) => {
+      console.log(f.name.text.green);
+      console.log(otherSmtTexts[i]);
+    });
+  }
 
   // annotate
   if (OPTS.annotate) {
@@ -87,7 +123,10 @@ function main(..._args: string[]) {
 
   // output
   if (OPTS.output) {
-    writeFileSync(OPTS.output, smtText);
+    writeFileSync(OPTS.output, mainSmtText);
+    if (OPTS.outputAll) {
+      otherFuncs.forEach((f, i) => writeFileSync(`${f.name.text}-${OPTS.output}`, otherSmtTexts[i]));
+    }
   }
 
   if (OPTS.verify) {
@@ -102,15 +141,8 @@ function main(..._args: string[]) {
         console.log('valid');
       }
     });
-    cmd.stdin.write(smtText);
+    cmd.stdin.write(mainSmtText);
     cmd.stdin.end();
-  }
-
-  if (OPTS.verbose) {
-    console.log('-----------------ANNOTATED----------------');
-    console.log(printer.printFile(sourceFile));
-    console.log('------------------SMTLIB------------------');
-    console.log(smtText);
   }
 }
 
@@ -118,6 +150,5 @@ try {
   main(...process.argv.slice(2));
 } catch (error) {
   console.log();
-  console.error(color.red(`ERR: ${error.message}`));
+  console.error(`ERR: ${error.message}`.red);
 }
-
