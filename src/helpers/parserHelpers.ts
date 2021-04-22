@@ -33,6 +33,9 @@ export function parseAnnotation(annotation: string): RootNode {
   const parser = getParser();
   try {
     parser.feed(annotation);
+    if (parser.results.length !== 1) {
+      throw new Error();
+    }
     return parser.results[0];
   } catch (error) {
     return undefined;
