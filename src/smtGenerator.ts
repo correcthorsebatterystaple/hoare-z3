@@ -65,6 +65,8 @@ export function generateDeclareStatements(
     const parserRoot = parseAnnotation(condition);
 
     visitParserNode(parserRoot, (node) => {
+      if (!node) return;
+
       if (node.type === ParserNodeType.FunctionCall) {
         const func = node as FunctionNode;
         functionIds[func.value.toString()] = func.args.length;
