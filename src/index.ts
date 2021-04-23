@@ -42,10 +42,25 @@ function getAllTopFunctionsFromSource(source: ts.SourceFile): ts.FunctionDeclara
   return source.statements.filter((x) => ts.isFunctionDeclaration(x)) as ts.FunctionDeclaration[];
 }
 
-function validateProgram(sourceFile: ts.SourceFile, filename: string) {
+function validateProgram(opts: {sourceFile: ts.SourceFile, filename: string, precondition: string}) {
+  const {sourceFile, filename} = opts;
   const compileErrors = getProgramCompileErrors(filename);
   if (compileErrors?.length > 0) {
     throw new Error(compileErrors.join('\n'));
+  }
+
+  let auxVariables = [];
+  const getAuxVariables = (node: ts.Node) => {
+    if (ts.isIdentifier(node) && /^_[a-zA-Z]_$/.test(node.getText())) {
+      auxVariables.push(node.getText());
+    }
+    node.forEachChild(child => {
+      getAuxVariables(child);
+    })
+  }
+  getAuxVariables(sourceFile);
+  if (auxVariables.length > 0) {
+    throw new Error(`Auxilary varibles not allowed in program: ${auxVariables.join(', ')}`);
   }
 
   let returnStatements = 0;
@@ -71,9 +86,9 @@ function main(..._args: string[]) {
   const sourceText = readFileSync(OPTS.filename, 'utf-8');
   const sourceFile = ts.createSourceFile(OPTS.filename, sourceText, ts.ScriptTarget.Latest, true);
 
-  validateProgram(sourceFile, OPTS.filename);
-
   const [mainFunc, ...otherFuncs] = getAllTopFunctionsFromSource(sourceFile);
+  const mainFuncSignature = `${mainFunc.name.text}(${mainFunc.parameters.map(p => p.name.getText()).join(', ')})`;
+  const otherFuncsSignature = otherFuncs.map(f => `${f.name.text}(${f.parameters.map(p => p.name.getText()).join(', ')})`);
 
   // validate annotations
   const precondition = getPreAnnotiationFromNode(mainFunc, sourceFile);
@@ -86,6 +101,8 @@ function main(..._args: string[]) {
     throw new Error('Invalid postcondition');
   }
 
+  validateProgram({sourceFile: sourceFile, filename: OPTS.filename, precondition});
+
   // get verification conditions
   const mainVerificationConditions = _getVerificationConditions(mainFunc.body, precondition, postcondition, sourceFile);
   const otherVerificationConditions = otherFuncs.map((func, i) => {
@@ -97,7 +114,7 @@ function main(..._args: string[]) {
 
   if (OPTS.verbose) {
     console.log('----------------CONDITIONS----------------'.blue);
-    console.log(mainFunc.name.text.green);
+    console.log(mainFuncSignature.green);
     console.log(mainVerificationConditions.join('\n'));
     otherFuncs.forEach((f, i) => {
       console.log(f.name.text.green);
@@ -119,7 +136,7 @@ function main(..._args: string[]) {
 
   if (OPTS.verbose) {
     console.log('------------------SMTLIB------------------'.blue);
-    console.log(mainFunc.name.text.green);
+    console.log(mainFuncSignature.green);
     console.log(mainSmtText);
     otherFuncs.forEach((f, i) => {
       console.log(f.name.text.green);
