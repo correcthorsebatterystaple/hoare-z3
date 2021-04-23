@@ -7,6 +7,7 @@ import { ArrayNode, FunctionNode, TerminalNode } from './interfaces/ParserNode';
 import { LexerToken } from './interfaces/LexerToken';
 import ts from 'typescript';
 import { getPreAnnotiationFromNode, getPostAnnotationFromNode } from './getVerificationConditions';
+import { BUILTIN_FUNCTIONS } from './builtin';
 
 let assertCount = 0;
 
@@ -40,8 +41,11 @@ export function generateSmtText(
     )
     .join('\n');
 
+  
+
   smtText.push(`(set-option :produce-unsat-cores true)`);
   smtText.push(generateDeclareStatements(verificationConditions, functions).join('\n'));
+  smtText.push(Object.values(BUILTIN_FUNCTIONS).map(v => v[1]).join('\n'));
   smtText.push('; Definitions');
   smtText.push(preconditionAssertStatement);
   smtText.push(assertDefinitions);
@@ -90,12 +94,12 @@ export function generateDeclareStatements(
   const intDeclareStatements = [...intIds].map((id) => `(declare-const ${id} Int)`);
   const arrayDeclareStatements = [...arrayIds].map((id) => `(declare-const ${id} (Array Int Int))`);
 
-  const builtInFunctions = { gcd: 2 };
+  const builtInFunctions = BUILTIN_FUNCTIONS;
   const invalidFunctions = Object.keys(functionIds).filter(
     (name) =>
       !functionDeclarations.some((f) => f.name.text === name && f.parameters.length === functionIds[name]) &&
       !Object.keys(builtInFunctions).some(
-        (builtInName) => name === builtInName && builtInFunctions[builtInName] === functionIds[name]
+        (builtInName) => name === builtInName && builtInFunctions[builtInName][0] === functionIds[name]
       )
   );
   if (invalidFunctions.length > 0) {
@@ -104,9 +108,9 @@ export function generateDeclareStatements(
     );
   }
 
-  const functionDeclareStatements = Object.keys(functionIds).map(
-    (key) => `(declare-fun ${key} (${Array(functionIds[key]).fill('Int').join(' ')}) Int)`
-  );
+  const functionDeclareStatements = Object.keys(functionIds)
+    .filter((id) => builtInFunctions[id] === undefined)
+    .map((key) => `(declare-fun ${key} (${Array(functionIds[key]).fill('Int').join(' ')}) Int)`);
 
   return intDeclareStatements.concat(arrayDeclareStatements).concat(functionDeclareStatements);
 }
