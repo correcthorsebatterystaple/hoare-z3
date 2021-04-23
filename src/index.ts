@@ -42,8 +42,8 @@ function getAllTopFunctionsFromSource(source: ts.SourceFile): ts.FunctionDeclara
   return source.statements.filter((x) => ts.isFunctionDeclaration(x)) as ts.FunctionDeclaration[];
 }
 
-function validateProgram(opts: {sourceFile: ts.SourceFile, filename: string, precondition: string}) {
-  const {sourceFile, filename} = opts;
+function validateProgram(opts: { sourceFile: ts.SourceFile; filename: string;}) {
+  const { sourceFile, filename } = opts;
   const compileErrors = getProgramCompileErrors(filename);
   if (compileErrors?.length > 0) {
     throw new Error(compileErrors.join('\n'));
@@ -54,10 +54,10 @@ function validateProgram(opts: {sourceFile: ts.SourceFile, filename: string, pre
     if (ts.isIdentifier(node) && /^_[a-zA-Z]_$/.test(node.getText())) {
       auxVariables.push(node.getText());
     }
-    node.forEachChild(child => {
+    node.forEachChild((child) => {
       getAuxVariables(child);
-    })
-  }
+    });
+  };
   getAuxVariables(sourceFile);
   if (auxVariables.length > 0) {
     throw new Error(`Auxilary varibles not allowed in program: ${auxVariables.join(', ')}`);
@@ -71,9 +71,13 @@ function validateProgram(opts: {sourceFile: ts.SourceFile, filename: string, pre
       node.forEachChild((child) => getReturnStatementCount(child));
     }
   };
-  getReturnStatementCount(sourceFile);
-  if (returnStatements > 1) {
-    throw new Error(`Max return statements exceeded: ${returnStatements}`);
+  const returnStatementsPerFunc = getAllTopFunctionsFromSource(sourceFile).map((f) => {
+    returnStatements = 0;
+    getReturnStatementCount(f);
+    return returnStatements;
+  });
+  if (returnStatementsPerFunc.some(x => x > 1)) {
+    throw new Error(`Max return statements exceeded`);
   }
 }
 
@@ -87,8 +91,10 @@ function main(..._args: string[]) {
   const sourceFile = ts.createSourceFile(OPTS.filename, sourceText, ts.ScriptTarget.Latest, true);
 
   const [mainFunc, ...otherFuncs] = getAllTopFunctionsFromSource(sourceFile);
-  const mainFuncSignature = `${mainFunc.name.text}(${mainFunc.parameters.map(p => p.name.getText()).join(', ')})`;
-  const otherFuncsSignature = otherFuncs.map(f => `${f.name.text}(${f.parameters.map(p => p.name.getText()).join(', ')})`);
+  const mainFuncSignature = `${mainFunc.name.text}(${mainFunc.parameters.map((p) => p.name.getText()).join(', ')})`;
+  const otherFuncsSignature = otherFuncs.map(
+    (f) => `${f.name.text}(${f.parameters.map((p) => p.name.getText()).join(', ')})`
+  );
 
   // validate annotations
   const precondition = getPreAnnotiationFromNode(mainFunc, sourceFile);
@@ -101,7 +107,7 @@ function main(..._args: string[]) {
     throw new Error('Invalid postcondition');
   }
 
-  validateProgram({sourceFile: sourceFile, filename: OPTS.filename, precondition});
+  validateProgram({ sourceFile: sourceFile, filename: OPTS.filename });
 
   // get verification conditions
   const mainVerificationConditions = _getVerificationConditions(mainFunc.body, precondition, postcondition, sourceFile);
@@ -116,8 +122,8 @@ function main(..._args: string[]) {
     console.log('----------------CONDITIONS----------------'.blue);
     console.log(mainFuncSignature.green);
     console.log(mainVerificationConditions.join('\n'));
-    otherFuncs.forEach((f, i) => {
-      console.log(f.name.text.green);
+    otherFuncsSignature.forEach((sign, i) => {
+      console.log(sign.green);
       console.log(otherVerificationConditions[i].join('\n'));
     });
   }
@@ -138,8 +144,8 @@ function main(..._args: string[]) {
     console.log('------------------SMTLIB------------------'.blue);
     console.log(mainFuncSignature.green);
     console.log(mainSmtText);
-    otherFuncs.forEach((f, i) => {
-      console.log(f.name.text.green);
+    otherFuncsSignature.forEach((sign, i) => {
+      console.log(sign.green);
       console.log(otherSmtTexts[i]);
     });
   }
