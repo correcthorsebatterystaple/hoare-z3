@@ -90,8 +90,13 @@ export function generateDeclareStatements(
   const intDeclareStatements = [...intIds].map((id) => `(declare-const ${id} Int)`);
   const arrayDeclareStatements = [...arrayIds].map((id) => `(declare-const ${id} (Array Int Int))`);
 
+  const builtInFunctions = { gcd: 2 };
   const invalidFunctions = Object.keys(functionIds).filter(
-    (name) => !functionDeclarations.some((f) => f.name.text === name && f.parameters.length === functionIds[name])
+    (name) =>
+      !functionDeclarations.some((f) => f.name.text === name && f.parameters.length === functionIds[name]) &&
+      !Object.keys(builtInFunctions).some(
+        (builtInName) => name === builtInName && builtInFunctions[builtInName] === functionIds[name]
+      )
   );
   if (invalidFunctions.length > 0) {
     throw new Error(
