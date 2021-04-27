@@ -4,7 +4,7 @@
             "name": "Current TS Sample File",
             "type": "node",
             "request": "launch",
-            "args": ["./src/index.ts", "./sample-programs/${input:sample}.ts", "-c"],
+            "args": ["./src/index.ts", "./sample-programs/${input:sample}.ts", "-v"],
             "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",

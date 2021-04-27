@@ -28,7 +28,8 @@ export function generateSmtText(
     `; ${precondition}`
   );
 
-  const infixDefinitions = getFunctionDefinitions(functions, sourceFile).map(
+  const functionDefinitions = getFunctionDefinitions(functions, sourceFile);
+  const infixDefinitions = functionDefinitions.map(
     ([quantifiers, definition]) => `(forall ${quantifiers} ${infixToSmtPrefix(definition)})`
   );
 
@@ -41,11 +42,14 @@ export function generateSmtText(
     )
     .join('\n');
 
-  
+  // Add built in functions that don't exist in program
+  const builtInFunctionDefinitions = Object.keys(BUILTIN_FUNCTIONS)
+    .filter((name) => !functions.some((f) => f.name.text === name))
+    .map((v) => BUILTIN_FUNCTIONS[v][1]);
 
   smtText.push(`(set-option :produce-unsat-cores true)`);
   smtText.push(generateDeclareStatements(verificationConditions, functions).join('\n'));
-  smtText.push(Object.values(BUILTIN_FUNCTIONS).map(v => v[1]).join('\n'));
+  smtText.push(builtInFunctionDefinitions.join('\n'));
   smtText.push('; Definitions');
   smtText.push(preconditionAssertStatement);
   smtText.push(assertDefinitions);
@@ -95,6 +99,7 @@ export function generateDeclareStatements(
   const arrayDeclareStatements = [...arrayIds].map((id) => `(declare-const ${id} (Array Int Int))`);
 
   const builtInFunctions = BUILTIN_FUNCTIONS;
+  // function is invalid when it is not user defined and not builtin but in the annotation
   const invalidFunctions = Object.keys(functionIds).filter(
     (name) =>
       !functionDeclarations.some((f) => f.name.text === name && f.parameters.length === functionIds[name]) &&
@@ -108,8 +113,9 @@ export function generateDeclareStatements(
     );
   }
 
+  // Only declare functions that are user defined
   const functionDeclareStatements = Object.keys(functionIds)
-    .filter((id) => builtInFunctions[id] === undefined)
+    .filter((id) => functionDeclarations.some((f) => f.name.text === id && f.parameters.length === functionIds[id]))
     .map((key) => `(declare-fun ${key} (${Array(functionIds[key]).fill('Int').join(' ')}) Int)`);
 
   return intDeclareStatements.concat(arrayDeclareStatements).concat(functionDeclareStatements);
