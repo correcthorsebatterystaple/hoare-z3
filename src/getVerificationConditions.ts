@@ -198,7 +198,7 @@ export function _getVerificationConditions(
       lastStatement.expression.left.text,
       lastStatement.expression.right.getText()
     );
-    return [..._getVerificationConditions(blockWithoutLastStatement, precondition, newPostcondition, sourceFile)];
+    return _getVerificationConditions(blockWithoutLastStatement, precondition, newPostcondition, sourceFile);
   }
 
   // Declaration
@@ -211,7 +211,7 @@ export function _getVerificationConditions(
       declaration.initializer.getText()
     );
 
-    return [..._getVerificationConditions(blockWithoutLastStatement, precondition, newPostcondition, sourceFile)];
+    return _getVerificationConditions(blockWithoutLastStatement, precondition, newPostcondition, sourceFile);
   }
 
   // Array assignment
@@ -226,7 +226,7 @@ export function _getVerificationConditions(
 
     const newPostcondition = arrayStoreTransform(postcondition, arrayIdentifier, arrayArgIdentifier, assignedValue);
 
-    return [..._getVerificationConditions(blockWithoutLastStatement, precondition, newPostcondition, sourceFile)];
+    return _getVerificationConditions(blockWithoutLastStatement, precondition, newPostcondition, sourceFile);
   }
 
   // Conditional
