@@ -2,9 +2,7 @@
 function max(x: number, y: number) {
   let z = 0;
   if (x > y) {
-    z = x;
-  } else {
-    z = y;
+    return x;
   }
-  return z;
+  return x;
 } //? $ret >= _A_ AND $ret >= _B_ AND ($ret = _A_ OR $ret = _B_)

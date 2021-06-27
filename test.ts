@@ -1,4 +1,3 @@
-import { parseAnnotation } from "./src/helpers/parserHelpers";
-import { tokenize } from "./src/tokenizer";
+import { infixToSmtPrefix } from "./src/infixToPrefix";
 
-console.log(parseAnnotation('-a=0'))
+console.log(infixToSmtPrefix("!A{b<-x}{b<-y}=!_A_"));

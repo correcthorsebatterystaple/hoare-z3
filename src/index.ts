@@ -11,6 +11,10 @@ import path from 'path';
 import { exec } from 'child_process';
 import 'colors';
 
+declare global {
+  var postcondition: string;
+}
+
 function parseArgs(_args: string[]) {
   let args = require('minimist')(_args);
   return {
@@ -63,22 +67,22 @@ function validateProgram(opts: { sourceFile: ts.SourceFile; filename: string;}) 
     throw new Error(`Auxilary varibles not allowed in program: ${auxVariables.join(', ')}`);
   }
 
-  let returnStatements = 0;
-  const getReturnStatementCount = (node: ts.Node) => {
-    if (ts.isReturnStatement(node)) {
-      returnStatements++;
-    } else {
-      node.forEachChild((child) => getReturnStatementCount(child));
-    }
-  };
-  const returnStatementsPerFunc = getAllTopFunctionsFromSource(sourceFile).map((f) => {
-    returnStatements = 0;
-    getReturnStatementCount(f);
-    return returnStatements;
-  });
-  if (returnStatementsPerFunc.some(x => x > 1)) {
-    throw new Error(`Max return statements exceeded`);
-  }
+  // let returnStatements = 0;
+  // const getReturnStatementCount = (node: ts.Node) => {
+  //   if (ts.isReturnStatement(node)) {
+  //     returnStatements++;
+  //   } else {
+  //     node.forEachChild((child) => getReturnStatementCount(child));
+  //   }
+  // };
+  // const returnStatementsPerFunc = getAllTopFunctionsFromSource(sourceFile).map((f) => {
+  //   returnStatements = 0;
+  //   getReturnStatementCount(f);
+  //   return returnStatements;
+  // });
+  // if (returnStatementsPerFunc.some(x => x > 1)) {
+  //   throw new Error(`Max return statements exceeded`);
+  // }
 }
 
 function main(..._args: string[]) {
@@ -106,6 +110,8 @@ function main(..._args: string[]) {
   if (!isValidParse(postcondition)) {
     throw new Error('Invalid postcondition');
   }
+
+  global.postcondition = postcondition;
 
   validateProgram({ sourceFile: sourceFile, filename: OPTS.filename });
 

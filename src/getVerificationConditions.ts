@@ -8,7 +8,7 @@ export function getWeakestPrecondition(
   depth = 0
 ): string {
   const postcondition = _postcondition;
-  if (!node) return undefined;
+  if (!node) return postcondition;
   // block statement
   if (ts.isBlock(node)) {
     // iterate through all the statements  in reverse and derive the weakest precondition for the block
@@ -91,7 +91,7 @@ export function getWeakestPrecondition(
   }
 
   if (ts.isReturnStatement(node)) {
-    const returnPrecondition = assignmentTransform(postcondition, '$ret', node.expression.getText());
+    const returnPrecondition = assignmentTransform(global.postcondition, '$ret', node.expression.getText());
 
     return returnPrecondition;
   }
@@ -278,7 +278,7 @@ export function _getVerificationConditions(
 
   // Return
   if (ts.isReturnStatement(lastStatement)) {
-    const newPostcondition = assignmentTransform(postcondition, '$ret', lastStatement.expression.getText());
+    const newPostcondition = assignmentTransform(global.postcondition, '$ret', lastStatement.expression.getText());
     return [..._getVerificationConditions(blockWithoutLastStatement, precondition, newPostcondition, sourceFile)];
   }
 
